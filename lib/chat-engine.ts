@@ -82,7 +82,7 @@ import {
 } from "./bilingual-prompt-defaults";
 import { parseOfflineResponse, type ParsedOfflineResponse } from "./chat-offline-storage";
 import { throwIfAborted } from "./abort-utils";
-import { determineBaseUrl, buildChatCompletionsUrl, buildRequestHeaders, isNativeAnthropicApi, isNativeGoogleApi, extractLLMContent } from "./api-helpers";
+import { determineBaseUrl, buildChatCompletionsUrl, buildRequestHeaders, isNativeAnthropicApi, isNativeGoogleApi, extractLLMContent, simpleLLMCall } from "./api-helpers";
 
 
 
@@ -2100,6 +2100,45 @@ export type OfflineChatCompletionResult = ParsedOfflineResponse & {
     reasoning?: string;
 };
 
+/** 线下模式摘要提取失败时的轻量补提：把本轮对话浓缩成一句摘要。
+ *  只补摘要、不重生成回复——整轮重试会改变角色已经说过的话，代价也更高。 */
+async function generateOfflineSummaryFallback(
+    config: ApiConfig,
+    characterName: string,
+    userName: string,
+    history: ChatMessage[],
+    replyText: string,
+): Promise<string> {
+    const lastUser = [...history].reverse().find(m => m.role === "user");
+    const userText = (lastUser?.content || "").trim();
+    const reply = replyText.replace(/\s+/g, " ").trim().slice(0, 2000);
+    if (!userText || !reply) return "";
+
+    const prompt = [
+        `你是记忆摘要助手。请把下面这段对话浓缩成一句客观摘要（不超过 60 字），用于写入${characterName}的长期记忆。`,
+        `要求：只输出摘要正文，不要任何标签、引号、前缀或解释；不要评价；用第三人称转述发生了什么。`,
+        ``,
+        `【${userName}】${userText}`,
+        `【${characterName}】${reply}`,
+    ].join("\n");
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60_000);
+    try {
+        const result = await simpleLLMCall(config, [{ role: "user", content: prompt }], {
+            temperature: 0.3,
+            signal: controller.signal,
+        });
+        const text = (result?.content || "").trim();
+        return text.length > 0 ? text : "";
+    } catch (error) {
+        console.warn("[ChatEngine] Offline summary fallback failed:", error);
+        return "";
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
 export async function generateOfflineChatCompletion(
     session: ChatSession,
     history: ChatMessage[],
@@ -2124,8 +2163,21 @@ export async function generateOfflineChatCompletion(
         signal: options?.signal,
         onReasoning: (t) => { reasoning = t; },
     });
+    const parsed = parseOfflineResponse(rawOutput, summaryTag);
+    // 摘要没提取出来（模型没按格式输出 / 标签被截断 / 被输出正则剥掉）时补提一次，
+    // 避免这一轮在记忆里静默丢失；补提也失败就维持空摘要，不影响回复本身。
+    if (!parsed.summary) {
+        const fallback = await generateOfflineSummaryFallback(
+            config,
+            character.name,
+            userIdentity?.name || "用户",
+            history,
+            parsed.content || rawOutput,
+        );
+        if (fallback) parsed.summary = fallback;
+    }
     return {
-        ...parseOfflineResponse(rawOutput, summaryTag),
+        ...parsed,
         model: config.defaultModel,
         presetName: preset?.name || "默认预设",
         reasoning: reasoning || undefined,

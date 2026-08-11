@@ -186,7 +186,7 @@ export const DATA_MODULES: DataModuleDefinition[] = [
   {
     id: "apps",
     label: "内容应用",
-    description: "日历、日记、购物、余额、阅读、音乐、经期记录与应用偏好",
+    description: "日历、日记、购物、余额、阅读、音乐、经期记录、自定义 APP 与应用偏好",
     variant: "teal",
     large: true,
     sources: [
@@ -230,6 +230,13 @@ export const DATA_MODULES: DataModuleDefinition[] = [
           "reading_import_diag_v1",
         ],
         prefixes: ["music-search-cache:", "music-playlist-tracks-", "music-playlist-detail-"],
+      },
+      {
+        type: "kv",
+        label: "自定义 APP 与数据",
+        description: "已安装的自定义 APP 包、APP 自身数据、写入角色的时间线与图标样式",
+        keys: ["ai_phone_custom_apps_v1", "ai_phone_custom_app_icon_styles_v1"],
+        prefixes: ["ai_phone_custom_app_data_v1:", "ai_phone_custom_app_timeline_v1:"],
       },
     ],
   },

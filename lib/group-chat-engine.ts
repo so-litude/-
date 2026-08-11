@@ -67,6 +67,7 @@ import { parseToolCalls, parseToolFetches, executeToolCalls, formatToolResults, 
 import { stripStateAndInnerForPrompt } from "./prompt-sanitizer";
 import { buildGroupRosterMacro } from "./group-admin";
 import { parseOfflineResponse, type ParsedOfflineResponse } from "./chat-offline-storage";
+import { simpleLLMCall } from "./api-helpers";
 import { buildProviderRequest, nativeToolProtocolForConfig, toLlmRequestMessages, type LlmRequestMessage, type LlmToolCall } from "./llm-provider-adapter";
 import type { DebugPromptSnapshot } from "./debug-store";
 import { throwIfAborted } from "./abort-utils";
@@ -1032,12 +1033,50 @@ export type GroupOfflineChatCompletionResult = ParsedOfflineResponse & {
     presetName: string;
 };
 
+/** 群聊线下摘要提取失败时的轻量补提（与单聊同策略：只补摘要，不重生成回复）。 */
+async function generateGroupOfflineSummaryFallback(
+    config: ApiConfig,
+    groupLabel: string,
+    userName: string,
+    history: ChatMessage[],
+    replyText: string,
+): Promise<string> {
+    const lastUser = [...history].reverse().find(m => m.role === "user");
+    const userText = (lastUser?.content || "").trim();
+    const reply = replyText.replace(/\s+/g, " ").trim().slice(0, 2000);
+    if (!userText || !reply) return "";
+
+    const prompt = [
+        `你是记忆摘要助手。请把下面这段群聊对话浓缩成一句客观摘要（不超过 60 字），用于写入群成员${groupLabel}的长期记忆。`,
+        `要求：只输出摘要正文，不要任何标签、引号、前缀或解释；不要评价；用第三人称转述发生了什么。`,
+        ``,
+        `【${userName}】${userText}`,
+        `【${groupLabel}】${reply}`,
+    ].join("\n");
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60_000);
+    try {
+        const result = await simpleLLMCall(config, [{ role: "user", content: prompt }], {
+            temperature: 0.3,
+            signal: controller.signal,
+        });
+        const text = (result?.content || "").trim();
+        return text.length > 0 ? text : "";
+    } catch (error) {
+        console.warn("[GroupChat] Offline summary fallback failed:", error);
+        return "";
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
 export async function generateGroupOfflineChatCompletion(
     session: ChatSession,
     history: ChatMessage[],
     options?: { signal?: AbortSignal },
 ): Promise<GroupOfflineChatCompletionResult> {
-    const { llmMessages, config, preset, regexes } = await buildGroupChatPromptMessages(
+    const { llmMessages, config, preset, regexes, userName } = await buildGroupChatPromptMessages(
         session,
         history,
         {
@@ -1057,8 +1096,20 @@ export async function generateGroupOfflineChatCompletion(
         signal: options?.signal,
         onReasoning: (t) => { reasoning = t; },
     });
+    const parsed = parseOfflineResponse(rawOutput, summaryTag);
+    // 与单聊线下同一策略：摘要没提取出来时补提一次，避免这一轮记忆静默丢失。
+    if (!parsed.summary) {
+        const fallback = await generateGroupOfflineSummaryFallback(
+            config,
+            `群聊:${session.groupName || "群聊"}`,
+            userName || "用户",
+            history,
+            parsed.content || rawOutput,
+        );
+        if (fallback) parsed.summary = fallback;
+    }
     return {
-        ...parseOfflineResponse(rawOutput, summaryTag),
+        ...parsed,
         model: config.defaultModel,
         presetName: preset?.name || "默认预设",
         reasoning: reasoning || undefined,
