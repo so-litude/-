@@ -82,6 +82,7 @@ import {
 } from "./bilingual-prompt-defaults";
 import { parseOfflineResponse, type ParsedOfflineResponse } from "./chat-offline-storage";
 import { throwIfAborted } from "./abort-utils";
+import { determineBaseUrl, buildChatCompletionsUrl, buildRequestHeaders, isNativeAnthropicApi, isNativeGoogleApi, extractLLMContent } from "./api-helpers";
 
 
 
@@ -281,6 +282,114 @@ function isVisionPromptImageMessage(msg: ChatMessage): boolean {
     return msg.mediaType === "image"
         || (msg.role === "user" && msg.mediaType === "sticker" && Boolean(msg.mediaData?.stickerUrl))
         || (msg.mediaType === "media_file" && msg.mediaData?.fileType === "image");
+}
+
+/** 两阶段识图：用独立的识图辅助模型把图片描述成文字。
+ *  主模型不支持视觉时调用，描述文本随后注入主模型提示词，主模型以角色身份回复。
+ *  失败时返回 null，调用方保持原占位降级，不阻断聊天。 */
+export async function describeImageWithVisionHelper(
+    config: ApiConfig,
+    imageDataUrl: string,
+    signal?: AbortSignal,
+): Promise<string | null> {
+    try {
+        const helperConfig: ApiConfig = {
+            id: `${config.id}-vision-helper`,
+            name: "识图辅助",
+            provider: config.visionHelperProvider || "Custom",
+            apiKey: config.visionHelperApiKey || "",
+            baseUrl: config.visionHelperBaseUrl,
+            defaultModel: config.visionHelperModel || "",
+            enableNativeTools: false,
+            enableImageRecognition: true,
+            enableImageGeneration: false,
+        };
+        const baseUrl = determineBaseUrl(helperConfig);
+        if (!baseUrl || !helperConfig.apiKey.trim() || !helperConfig.defaultModel.trim()) return null;
+
+        const headers = buildRequestHeaders(helperConfig, baseUrl);
+        // 复用主链路压缩逻辑（最长边 512px JPEG），减小体积、加快识图
+        const resolvedImage = await resolveCompressedImageDataUrl(imageDataUrl).catch(() => imageDataUrl);
+        if (!resolvedImage) return null;
+
+        const systemPrompt = "你是图像内容描述助手。请客观、具体地描述这张图片：画面主体、人物/物体、场景、动作、表情、画面中的文字（尽量原样转写）、色调氛围等。不要评价、不要角色扮演、不要输出与图片无关的内容。直接输出描述正文，不要任何前缀。";
+        const userPrompt = "请描述这张图片的内容。";
+
+        let fetchUrl: string;
+        let body: string;
+
+        if (isNativeAnthropicApi(helperConfig)) {
+            // Anthropic Messages API：content blocks 多模态
+            fetchUrl = `${baseUrl.replace(/\/$/, "")}/messages`;
+            const mime = (resolvedImage.match(/^data:([^;,]+)/i)?.[1] || "image/jpeg");
+            const b64 = resolvedImage.slice(resolvedImage.indexOf(",") + 1);
+            body = JSON.stringify({
+                model: helperConfig.defaultModel,
+                system: systemPrompt,
+                messages: [{
+                    role: "user",
+                    content: [
+                        { type: "image", source: { type: "base64", media_type: mime, data: b64 } },
+                        { type: "text", text: userPrompt },
+                    ],
+                }],
+                max_tokens: 1024,
+            });
+        } else if (isNativeGoogleApi(helperConfig)) {
+            // Google Gemini：inline_data
+            fetchUrl = `${baseUrl.replace(/\/$/, "")}/models/${helperConfig.defaultModel}:generateContent?key=${helperConfig.apiKey}`;
+            delete headers["Authorization"];
+            const mime = (resolvedImage.match(/^data:([^;,]+)/i)?.[1] || "image/jpeg");
+            const b64 = resolvedImage.slice(resolvedImage.indexOf(",") + 1);
+            body = JSON.stringify({
+                contents: [{
+                    role: "user",
+                    parts: [
+                        { text: userPrompt },
+                        { inline_data: { mime_type: mime, data: b64 } },
+                    ],
+                }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: { temperature: 0.2, maxOutputTokens: 1024 },
+            });
+        } else {
+            // OpenAI 兼容（含大多数中转站）：image_url 多模态
+            fetchUrl = buildChatCompletionsUrl(baseUrl);
+            body = JSON.stringify({
+                model: helperConfig.defaultModel,
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    {
+                        role: "user",
+                        content: [
+                            { type: "text", text: userPrompt },
+                            { type: "image_url", image_url: { url: resolvedImage } },
+                        ],
+                    },
+                ],
+                temperature: 0.2,
+                max_tokens: 1024,
+            });
+        }
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 60_000);
+        const onOuterAbort = () => controller.abort();
+        if (signal) signal.addEventListener("abort", onOuterAbort, { once: true });
+        try {
+            const res = await fetch(fetchUrl, { method: "POST", headers, body, signal: controller.signal });
+            if (!res.ok) return null;
+            const data = await res.json();
+            const text = extractLLMContent(data, helperConfig.provider) || "";
+            const trimmed = text.replace(/\s+/g, " ").trim();
+            return trimmed ? trimmed.slice(0, 600) : null;
+        } finally {
+            clearTimeout(timeout);
+            if (signal) signal.removeEventListener("abort", onOuterAbort);
+        }
+    } catch {
+        return null;
+    }
 }
 
 function hasVisionPromptImageData(msg: ChatMessage): boolean {
@@ -1846,6 +1955,18 @@ export async function buildChatPromptMessages(
     if (config.enableImageRecognition) {
         for (const msg of promptHistory) {
             await prepareVisionPromptImageMessage(msg);
+        }
+    } else if (config.visionHelperEnabled === true) {
+        // 两阶段识图：主模型不直接看图时，把用户图片先经识图辅助模型转成文字描述，
+        // 再以文本形式喂给主模型，让主模型以角色身份正常回复。失败时保持原占位降级。
+        const userName = userIdentity?.name || "用户";
+        for (const msg of promptHistory) {
+            if (msg.role !== "user" || msg.mediaType !== "image" || !msg.mediaUrl) continue;
+            const description = await describeImageWithVisionHelper(config, msg.mediaUrl, options?.signal);
+            if (!description) continue;
+            msg.mediaType = undefined;
+            msg.mediaUrl = undefined;
+            msg.content = `（${userName} 发来一张图片，图片内容：${description}）`;
         }
     }
 

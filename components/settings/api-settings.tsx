@@ -436,6 +436,66 @@ export function ApiSettings() {
 
                                         <div className="ui-toggle-row mt-2">
                                             <span className="flex min-w-0 flex-col">
+                                                <span className="menu-label font-medium">启用识图辅助模型</span>
+                                                <span className="menu-desc">
+                                                    当主模型不支持看图时，你发的图片会先经此模型识别为文字描述，再交给主模型以角色身份回复（两阶段识图）。启用后建议关闭上方「启用图像识别」，避免主模型自己接收图片。
+                                                </span>
+                                            </span>
+                                            <Toggle
+                                                checked={config.visionHelperEnabled === true}
+                                                onChange={(v) => updateConfig(config.id, { visionHelperEnabled: v })}
+                                            />
+                                        </div>
+
+                                        {config.visionHelperEnabled === true && (
+                                            <>
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="menu-desc ml-1">识图模型 服务商 (Provider)</label>
+                                                    <select
+                                                        value={config.visionHelperProvider || "Custom"}
+                                                        onChange={(e) => updateConfig(config.id, { visionHelperProvider: e.target.value })}
+                                                        className="ui-select"
+                                                    >
+                                                        <option value="OpenAI">OpenAI</option>
+                                                        <option value="Anthropic">Anthropic</option>
+                                                        <option value="Google">Google Gemini</option>
+                                                        <option value="Custom">自定义 (Custom)</option>
+                                                    </select>
+                                                </div>
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="menu-desc ml-1">
+                                                        识图模型 Base URL {config.visionHelperProvider === "Custom" ? "（必填）" : "（可选，留空用官方端点）"}
+                                                    </label>
+                                                    <Input
+                                                        type="url"
+                                                        value={config.visionHelperBaseUrl || ""}
+                                                        onChange={(e) => updateConfig(config.id, { visionHelperBaseUrl: e.target.value })}
+                                                        placeholder="https://api.example.com/v1"
+                                                    />
+                                                </div>
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="menu-desc ml-1">识图模型 API Key</label>
+                                                    <Input
+                                                        type="password"
+                                                        value={config.visionHelperApiKey || ""}
+                                                        onChange={(e) => updateConfig(config.id, { visionHelperApiKey: e.target.value })}
+                                                        placeholder="sk-..."
+                                                    />
+                                                </div>
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="menu-desc ml-1">识图模型 (Model)</label>
+                                                    <Input
+                                                        type="text"
+                                                        value={config.visionHelperModel || ""}
+                                                        onChange={(e) => updateConfig(config.id, { visionHelperModel: e.target.value })}
+                                                        placeholder="gpt-4o, qwen-vl-max, glm-4v..."
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
+
+                                        <div className="ui-toggle-row mt-2">
+                                            <span className="flex min-w-0 flex-col">
                                                 <span className="menu-label font-medium">防胡言乱语</span>
                                                 <span className="menu-desc">防止没有用户输入时胡言乱语</span>
                                             </span>

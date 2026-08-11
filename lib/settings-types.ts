@@ -123,6 +123,12 @@ export type ApiConfig = {
     enableImageRecognition: boolean;
     enableImageGeneration: boolean;
     preventEmptyGenerateRambling?: boolean;
+    /** 两阶段识图：主模型不支持视觉时，用独立的识图辅助模型把图片描述成文字再喂主模型 */
+    visionHelperEnabled?: boolean;
+    visionHelperProvider?: string;
+    visionHelperApiKey?: string;
+    visionHelperBaseUrl?: string;
+    visionHelperModel?: string;
 };
 
 // --- VoiceApiConfig (migrated from voice-settings.tsx) ---
