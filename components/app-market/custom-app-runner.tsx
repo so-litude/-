@@ -730,7 +730,11 @@ export function CustomAppRunner({
     onlineRoomRef.current = null;
   }, []);
   const [frameId] = useState(() => `custom_app_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
-  const [bridgeReady, setBridgeReady] = useState(false);
+  // iframe 首帧直接加载完整 srcDoc：不再先注入空文档、等 bridgeReady 后再换成完整内容。
+  // 那套「空文档 → 完整文档」的二次导航在 Edge/Android 上存在竞态（第二次导航可能被浏览器
+  // 丢弃，iframe 停在空文档 → 白屏），且宿主 message 监听器在挂载时同步注册、iframe 文档
+  // 加载是异步的，监听器必然先就绪，直接加载完整文档没有风险。
+  const [bridgeReady, setBridgeReady] = useState(true);
   const isBackgroundRunner = Boolean(backgroundEvent || backgroundTool);
   const effectiveEmbedded = embedded || isBackgroundRunner;
   const srcDoc = useMemo(() => createCustomAppSrcDoc(app, frameId, launchContext, effectiveEmbedded), [app, frameId, launchContext, effectiveEmbedded]);
