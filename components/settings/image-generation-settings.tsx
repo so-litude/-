@@ -50,6 +50,10 @@ const IMAGE_HOSTING_PROVIDER_OPTIONS = [
     { value: "none", label: "不使用图床" },
     { value: "imgbb", label: "ImgBB" },
 ] as const;
+const IMAGE_PROTOCOL_OPTIONS = [
+    { value: "openai", label: "OpenAI 兼容（默认）" },
+    { value: "dashscope", label: "百炼 DashScope 原生" },
+] as const;
 const imageGenerationIconStyle = { "--icon-color": "#0EA5E9" } as CSSProperties;
 
 type Status = { success: boolean; message: string };
@@ -216,18 +220,44 @@ export function ImageGenerationSettings() {
 
             <div className="menu-group p-4 flex flex-col gap-4">
                 <div className="flex flex-col gap-1">
+                    <label className="menu-desc ml-1">协议</label>
+                    <Select
+                        value={settings.protocol}
+                        onChange={(event) => {
+                            const protocol = event.target.value as ImageGenerationSettingsType["protocol"];
+                            updateSettings({
+                                protocol,
+                                ...(protocol === "dashscope" ? { requestMode: "server" as const } : {}),
+                            });
+                        }}
+                    >
+                        {IMAGE_PROTOCOL_OPTIONS.map(option => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                    </Select>
+                    <span className="menu-desc ml-1">
+                        {settings.protocol === "dashscope"
+                            ? "百炼原生协议：Base URL 填专属工作空间生成端点（.../multimodal-generation/generation），模型名手动填（如 z-image-turbo），不支持拉取模型列表与参考图。"
+                            : "OpenAI 风格接口（/images/generations）。"}
+                    </span>
+                </div>
+
+                <div className="flex flex-col gap-1">
                     <label className="menu-desc ml-1">请求方式</label>
                     <Select
                         value={settings.requestMode}
                         onChange={(event) => updateSettings({
                             requestMode: event.target.value as ImageGenerationSettingsType["requestMode"],
                         })}
+                        disabled={settings.protocol === "dashscope"}
                     >
                         <option value="server">服务端转发</option>
                         <option value="direct">浏览器直连</option>
                     </Select>
                     <span className="menu-desc ml-1">
-                        浏览器直连会从当前设备直接请求生图 API，可绕开部署平台函数超时；需要接口允许跨域。
+                        {settings.protocol === "dashscope"
+                            ? "百炼原生协议仅支持服务端转发（由服务端下载图片，无跨域限制）。"
+                            : "浏览器直连会从当前设备直接请求生图 API，可绕开部署平台函数超时；需要接口允许跨域。"}
                     </span>
                 </div>
 
@@ -260,7 +290,7 @@ export function ImageGenerationSettings() {
                                 type="text"
                                 value={settings.model}
                                 onChange={(event) => updateSettings({ model: event.target.value })}
-                                placeholder="gpt-image-2 / image2 / chatgpt-image-latest"
+                                placeholder={settings.protocol === "dashscope" ? "z-image-turbo" : "gpt-image-2 / image2 / chatgpt-image-latest"}
                                 className={likelyModels.length > 0 ? "w-full pr-9" : "w-full"}
                             />
                             {likelyModels.length > 0 && (
@@ -283,7 +313,7 @@ export function ImageGenerationSettings() {
                         <button
                             type="button"
                             onClick={fetchModels}
-                            disabled={isFetchingModels}
+                            disabled={isFetchingModels || settings.protocol === "dashscope"}
                             className="ui-btn ui-btn-soft-action shrink-0"
                         >
                             <RefreshCw size={16} className={isFetchingModels ? "animate-spin" : ""} />

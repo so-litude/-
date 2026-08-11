@@ -11,6 +11,7 @@ type ImageGenerationRequest = {
   size?: string;
   quality?: string;
   referenceImageDataUrl?: string;
+  protocol?: "openai" | "dashscope";
 };
 
 type ExtractedImage =
@@ -99,6 +100,31 @@ function extractFromObject(data: unknown): ExtractedImage | null {
   return null;
 }
 
+function extractDashScopeImage(data: unknown): ExtractedImage | null {
+  if (!data || typeof data !== "object") return null;
+  const record = data as Record<string, unknown>;
+  const output = record.output;
+  if (!output || typeof output !== "object") return null;
+  const choices = (output as Record<string, unknown>).choices;
+  if (!Array.isArray(choices)) return null;
+  for (const choice of choices) {
+    if (!choice || typeof choice !== "object") continue;
+    const message = (choice as Record<string, unknown>).message;
+    if (!message || typeof message !== "object") continue;
+    const content = (message as Record<string, unknown>).content;
+    if (!Array.isArray(content)) continue;
+    for (const item of content) {
+      if (item && typeof item === "object") {
+        const image = (item as Record<string, unknown>).image;
+        if (typeof image === "string" && image.trim()) {
+          return { kind: "url", url: image.trim() };
+        }
+      }
+    }
+  }
+  return null;
+}
+
 async function externalFetch(url: string, init: RequestInit): Promise<Response> {
   const dispatcher = getProxyDispatcher();
   return dispatcher
@@ -124,17 +150,32 @@ async function runImageGeneration(input: ImageGenerationRequest): Promise<{ stat
     const model = input.model?.trim();
     const prompt = input.prompt?.trim();
     const hasReference = Boolean(input.referenceImageDataUrl?.trim());
+    const protocol = input.protocol === "dashscope" ? "dashscope" : "openai";
 
     if (!apiKey) return { status: 400, body: { error: "缺少 API Key" } };
     if (!baseUrl) return { status: 400, body: { error: "缺少 Base URL" } };
     if (!model) return { status: 400, body: { error: "缺少模型名" } };
     if (!prompt) return { status: 400, body: { error: "缺少提示词" } };
 
-    const url = buildImageUrl(baseUrl, hasReference ? "edits" : "generations");
+    if (protocol === "dashscope" && hasReference) {
+      return { status: 400, body: { error: "百炼 DashScope 原生协议暂不支持参考图模式" } };
+    }
+
+    // DashScope 原生协议:Base URL 就是生成端点本身(如 .../multimodal-generation/generation),
+    // 不追加 /images/generations;请求体走百炼原生格式,size/quality 由模型自行决定不传。
+    const url = protocol === "dashscope"
+      ? baseUrl.replace(/\/+$/, "")
+      : buildImageUrl(baseUrl, hasReference ? "edits" : "generations");
     const headers: Record<string, string> = { Authorization: `Bearer ${apiKey}` };
     let body: BodyInit;
 
-    if (hasReference) {
+    if (protocol === "dashscope") {
+      headers["Content-Type"] = "application/json";
+      body = JSON.stringify({
+        model,
+        input: { messages: [{ role: "user", content: [{ text: prompt }] }] },
+      });
+    } else if (hasReference) {
       const converted = dataUrlToBlob(input.referenceImageDataUrl || "");
       if (!converted) return { status: 400, body: { error: "参考图格式无效" } };
       const form = new FormData();
@@ -175,7 +216,7 @@ async function runImageGeneration(input: ImageGenerationRequest): Promise<{ stat
     }
 
     const json = await res.json();
-    const extracted = extractFromObject(json);
+    const extracted = protocol === "dashscope" ? extractDashScopeImage(json) : extractFromObject(json);
     if (!extracted) {
       return { status: 502, body: { error: `生图 API 返回中没有找到图片字段：${JSON.stringify(Object.keys(json || {})).slice(0, 200)}` } };
     }

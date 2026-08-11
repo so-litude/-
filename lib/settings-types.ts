@@ -151,6 +151,8 @@ export type VoiceApiConfig = {
 // --- Image Generation ---
 export type ImageGenerationRequestMode = "server" | "direct";
 
+export type ImageGenerationProtocol = "openai" | "dashscope";
+
 export type ImageHostingProvider = "none" | "imgbb";
 
 export type ImageHostingSettings = {
@@ -165,6 +167,7 @@ export type ImageHostingSettings = {
 export type ImageGenerationSettings = {
     enabled: boolean;
     requestMode: ImageGenerationRequestMode;
+    protocol: ImageGenerationProtocol;
     apiKey: string;
     baseUrl: string;
     model: string;

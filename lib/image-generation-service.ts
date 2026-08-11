@@ -269,7 +269,10 @@ export function filterLikelyImageModels(models: string[]): string[] {
   return filtered.length > 0 ? filtered : models;
 }
 
-export async function fetchImageGenerationModels(settings: Pick<ImageGenerationSettings, "apiKey" | "baseUrl" | "requestMode">): Promise<string[]> {
+export async function fetchImageGenerationModels(settings: Pick<ImageGenerationSettings, "apiKey" | "baseUrl" | "requestMode" | "protocol">): Promise<string[]> {
+  if (settings.protocol === "dashscope") {
+    throw new Error("百炼 DashScope 原生协议没有模型列表接口，请手动填写模型名（如 z-image-turbo）。");
+  }
   if (settings.requestMode === "direct") {
     try {
       const res = await fetch(buildModelsUrl(settings.baseUrl), {
@@ -377,6 +380,11 @@ async function generateImageViaServerOrProxy(params: {
   referenceImageDataUrl: string | null;
   signal?: AbortSignal;
 }): Promise<ImageGenerationApiResponse> {
+  // 百炼 DashScope 原生协议不走通用生图代理（代理只做 OpenAI 格式转发），
+  // 直接走服务端转发路由（/api/image-generation 已内置 DashScope 转换）。
+  if (params.settings.protocol === "dashscope") {
+    return generateImageViaServer(params);
+  }
   if (IMAGE_GEN_PROXY_URL) {
     try {
       return await generateImageDirect({ ...params, proxyBaseUrl: IMAGE_GEN_PROXY_URL });
@@ -419,6 +427,7 @@ async function generateImageViaServer(params: {
         prompt,
         size: settings.size,
         quality: settings.quality,
+        protocol: settings.protocol,
         referenceImageDataUrl: referenceImageDataUrl || undefined,
       }),
     });
@@ -503,6 +512,9 @@ export async function generateImageFromConfiguredApi(params: {
   throwIfAborted(params.signal);
   const prompt = mergePrompt(description, settings.extraPrompt);
 
+  if (settings.protocol === "dashscope" && settings.requestMode === "direct") {
+    throw new Error("百炼 DashScope 原生协议请使用「服务端转发」请求方式（浏览器直连不支持该协议）。");
+  }
   const data = settings.requestMode === "direct"
     ? await generateImageDirect({ settings, prompt, referenceImageDataUrl, signal: params.signal })
     : await generateImageViaServerOrProxy({ settings, prompt, referenceImageDataUrl, signal: params.signal });

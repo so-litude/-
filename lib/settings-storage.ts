@@ -623,6 +623,7 @@ export function saveVoiceConfigs(configs: VoiceApiConfig[]): void {
 export const DEFAULT_IMAGE_GENERATION_SETTINGS: ImageGenerationSettings = {
     enabled: false,
     requestMode: "direct",
+    protocol: "openai",
     apiKey: "",
     baseUrl: "https://api.openai.com/v1",
     model: "gpt-image-2",
@@ -647,6 +648,9 @@ function normalizeImageGenerationSettings(settings: Partial<ImageGenerationSetti
     const requestMode = settings?.requestMode === "server" || settings?.requestMode === "direct"
         ? settings.requestMode
         : DEFAULT_IMAGE_GENERATION_SETTINGS.requestMode;
+    const protocol = settings?.protocol === "openai" || settings?.protocol === "dashscope"
+        ? settings.protocol
+        : DEFAULT_IMAGE_GENERATION_SETTINGS.protocol;
     const hosting: Partial<ImageGenerationSettings["imageHosting"]> = settings?.imageHosting && typeof settings.imageHosting === "object"
         ? settings.imageHosting
         : {};
@@ -661,6 +665,7 @@ function normalizeImageGenerationSettings(settings: Partial<ImageGenerationSetti
         ...DEFAULT_IMAGE_GENERATION_SETTINGS,
         ...(settings || {}),
         requestMode,
+        protocol,
         characterReferences: refs,
         imageHosting: {
             ...DEFAULT_IMAGE_GENERATION_SETTINGS.imageHosting,
