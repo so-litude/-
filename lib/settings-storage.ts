@@ -630,6 +630,7 @@ export const DEFAULT_IMAGE_GENERATION_SETTINGS: ImageGenerationSettings = {
     size: "1024x1024",
     quality: "auto",
     extraPrompt: "",
+    askPromptOnUserRequest: true,
     characterReferences: {},
     imageHosting: {
         provider: "none",
@@ -667,6 +668,7 @@ function normalizeImageGenerationSettings(settings: Partial<ImageGenerationSetti
         requestMode,
         protocol,
         characterReferences: refs,
+        askPromptOnUserRequest: settings?.askPromptOnUserRequest !== false,
         imageHosting: {
             ...DEFAULT_IMAGE_GENERATION_SETTINGS.imageHosting,
             ...hosting,

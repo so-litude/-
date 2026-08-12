@@ -40,6 +40,29 @@ const IMAGE_MODEL_HINTS = [
   "wan",
 ];
 
+// 部分中转 API（如 gpt-image-2 系）忽略 size 参数、自行决定画幅。作为兜底，
+// 在提示词里追加一句自然语言构图提示——这些模型会遵守。标记用于在尺寸变化时
+// 替换旧的提示行而不是叠加。设置页与「本次覆盖提示词」共用同一套逻辑。
+export const RATIO_HINT_MARKER = "【画面比例】";
+const SIZE_RATIO_HINTS: Record<string, string> = {
+  "1024x1024": "正方形 1:1 构图，square 1:1 composition",
+  "1024x1536": "竖向 2:3 构图，vertical portrait composition",
+  "1536x1024": "横向 3:2 构图，horizontal landscape composition",
+};
+
+// 移除自动追加的比例提示行，保留用户自己的文本。
+export function stripRatioHint(text: string): string {
+  return text.replace(new RegExp(`\\s*${RATIO_HINT_MARKER}[^\\n]*`, "g"), "").replace(/\s+$/, "");
+}
+
+// 为指定 size 追加比例提示（替换旧提示）；auto 则去掉。
+export function withRatioHint(extraPrompt: string, size: string): string {
+  const base = stripRatioHint(extraPrompt);
+  const hint = SIZE_RATIO_HINTS[size];
+  if (!hint) return base;
+  return base ? `${base}\n${RATIO_HINT_MARKER}${hint}` : `${RATIO_HINT_MARKER}${hint}`;
+}
+
 function mergePrompt(description: string, extraPrompt: string): string {
   const main = description.trim();
   const extra = extraPrompt.trim();
@@ -494,6 +517,8 @@ export async function generateImageFromConfiguredApi(params: {
   useReferenceImage?: boolean;
   settings?: ImageGenerationSettings;
   signal?: AbortSignal;
+  /** 本次生成覆盖全局「补充提示词」；为空/未传则用 settings.extraPrompt */
+  overrideExtraPrompt?: string;
 }): Promise<ImageGenerationResult | null> {
   const settings = params.settings ?? loadImageGenerationSettings();
   if (!settings.enabled) return null;
@@ -510,7 +535,10 @@ export async function generateImageFromConfiguredApi(params: {
     ? await normalizeReferenceImageForEdit(rawReferenceImageDataUrl)
     : null;
   throwIfAborted(params.signal);
-  const prompt = mergePrompt(description, settings.extraPrompt);
+  // 本次覆盖：用户填写的提示词替换全局「补充提示词」，仍自动带上当前尺寸的构图提示。
+  // 留空（或未传）时回退到设置里的全局 extraPrompt。
+  const overrideExtra = params.overrideExtraPrompt?.trim() || "";
+  const prompt = mergePrompt(description, overrideExtra ? withRatioHint(overrideExtra, settings.size) : settings.extraPrompt);
 
   if (settings.protocol === "dashscope" && settings.requestMode === "direct") {
     throw new Error("百炼 DashScope 原生协议请使用「服务端转发」请求方式（浏览器直连不支持该协议）。");

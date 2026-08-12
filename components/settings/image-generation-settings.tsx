@@ -15,37 +15,15 @@ import {
     fetchImageGenerationModels,
     filterLikelyImageModels,
     generateImageFromConfiguredApi,
+    RATIO_HINT_MARKER,
+    stripRatioHint,
+    withRatioHint,
 } from "@/lib/image-generation-service";
 import { Alert } from "@/components/ui/feedback";
 import { Input, Select, Textarea, Toggle } from "@/components/ui/form";
 
 const SIZE_OPTIONS = ["auto", "1024x1024", "1024x1536", "1536x1024"];
 const QUALITY_OPTIONS = ["auto", "low", "medium", "high"];
-
-// Some relay APIs (e.g. dzzi 的 gpt-image-2) ignore the `size` param and pick
-// their own aspect ratio. As a fallback we append a natural-language ratio hint
-// to the prompt, which these models DO respect. The marker lets us replace the
-// previously-appended hint instead of stacking them when the size changes.
-const RATIO_HINT_MARKER = "【画面比例】";
-const SIZE_RATIO_HINTS: Record<string, string> = {
-    "1024x1024": "正方形 1:1 构图，square 1:1 composition",
-    "1024x1536": "竖向 2:3 构图，vertical portrait composition",
-    "1536x1024": "横向 3:2 构图，horizontal landscape composition",
-};
-
-// Remove any auto-appended ratio hint line(s), preserving the user's own text.
-function stripRatioHint(text: string): string {
-    return text.replace(new RegExp(`\\s*${RATIO_HINT_MARKER}[^\\n]*`, "g"), "").replace(/\s+$/, "");
-}
-
-// Return the prompt with the ratio hint for `size` appended (replacing any
-// previous hint). `auto` strips the hint entirely.
-function withRatioHint(extraPrompt: string, size: string): string {
-    const base = stripRatioHint(extraPrompt);
-    const hint = SIZE_RATIO_HINTS[size];
-    if (!hint) return base;
-    return base ? `${base}\n${RATIO_HINT_MARKER}${hint}` : `${RATIO_HINT_MARKER}${hint}`;
-}
 const IMAGE_HOSTING_PROVIDER_OPTIONS = [
     { value: "none", label: "不使用图床" },
     { value: "imgbb", label: "ImgBB" },
@@ -214,6 +192,18 @@ export function ImageGenerationSettings() {
                     </span>
                     <span className="menu-right settings-tools-menu-toggle">
                         <Toggle checked={settings.enabled} onChange={(enabled) => updateSettings({ enabled })} className="settings-toggle-control" />
+                    </span>
+                </div>
+                <div className="menu-item">
+                    <span className="card-icon" style={imageGenerationIconStyle}>
+                        <Sparkles size={22} strokeWidth={1.75} />
+                    </span>
+                    <span className="settings-tools-menu-copy">
+                        <span className="menu-label appearance-menu-item-label">主动要照片时弹窗填写提示词</span>
+                        <span className="menu-desc settings-tools-menu-desc">你说「让我看看 / 拍一张 / 发张照片」等话后角色发照片时，弹出输入框填写本次提示词（替换全局补充提示词）；留空或 60 秒未填则用默认。</span>
+                    </span>
+                    <span className="menu-right settings-tools-menu-toggle">
+                        <Toggle checked={settings.askPromptOnUserRequest !== false} onChange={(enabled) => updateSettings({ askPromptOnUserRequest: enabled })} className="settings-toggle-control" />
                     </span>
                 </div>
             </div>

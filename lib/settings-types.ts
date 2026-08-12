@@ -174,6 +174,8 @@ export type ImageGenerationSettings = {
     size: string;
     quality: string;
     extraPrompt: string;
+    /** 用户主动要照片（命中触发词）时，生图前弹窗让用户填写本次提示词；留空则用全局 extraPrompt */
+    askPromptOnUserRequest: boolean;
     characterReferences: Record<string, {
         assetId: string;
         updatedAt: number;

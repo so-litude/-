@@ -36,7 +36,7 @@ import { TransferTargetModal } from "./transfer-target-modal";
 import { GiftPickerModal } from "./gift-picker-modal";
 import { ConfirmDialog } from "@/components/ui/modal";
 import { deleteWeixinCloudMessagesFromCloud } from "@/lib/weixin-cloud-sync";
-import { loadBindingConfig, loadRegexes, resolveBinding, resolveUserIdentity } from "@/lib/settings-storage";
+import { loadBindingConfig, loadImageGenerationSettings, loadRegexes, resolveBinding, resolveUserIdentity } from "@/lib/settings-storage";
 import { generateGroupChatCompletion, generateGroupOfflineChatCompletion, parseGroupChatResponse, buildEditableGroupRoundText } from "@/lib/group-chat-engine";
 import { appendChatOfflineTurn, deleteChatOfflineTurn, deleteChatOfflineTurnsFrom, loadChatOfflineTurns, parseOfflineResponse, saveChatOfflineTurns, updateChatOfflineTurn, type ChatOfflineTurn } from "@/lib/chat-offline-storage";
 import { applyDisplayRegex, applyEditRegex } from "@/lib/llm-prompt-assembler";
@@ -86,6 +86,16 @@ import { ChatPluginSlot } from "@/components/chat/chat-plugin-slot";
 const CALL_SYS_RE = /\[我(?:向.+)?(?:发起了|挂断了|拒绝了|取消了)(?:群?(?:语音|视频)通话)/;
 function isCallSysMsg(msg: ChatMessage): boolean {
     return CALL_SYS_RE.test(msg.content);
+}
+// ── 用户主动要照片 → 生图前弹窗填写本次提示词 ──
+// 用户消息命中触发词时给会话打标记；下次该会话生图时消费（弹窗填提示词），
+// 超过有效期自动作废，避免很久之后角色主动发图还弹窗。
+const IMAGE_PROMPT_REQUEST_PREFIX = "chat_image_prompt_request_";
+const IMAGE_PROMPT_REQUEST_TTL_MS = 10 * 60 * 1000; // 10 分钟
+const IMAGE_PROMPT_TRIGGER_RE = /(?:让我看看|给我看看|看看照片|拍一张|拍个照|拍张照|拍张照片|拍个照片|发张照片|发个照片|来张照片|给我拍)/;
+
+function shouldRequestImagePrompt(text: string): boolean {
+    return IMAGE_PROMPT_TRIGGER_RE.test(text);
 }
 /** Returns the effective UI role: call messages render as "system" regardless of stored role */
 const ACTION_MEDIA_TYPES = new Set(["poke", "accept_red_packet", "decline_red_packet", "accept_transfer", "decline_transfer", "accept_payment_request", "decline_payment_request", "group_admin_notice"]);
@@ -2582,6 +2592,34 @@ export function ChatRoom({ session, onBack }: ChatRoomProps) {
         });
     };
 
+    // ── 用户主动要照片时：生图前弹窗填写本次提示词 ──
+    const [imagePromptDialog, setImagePromptDialog] = useState<{ resolve: (value: string | null) => void } | null>(null);
+    const imagePromptInputRef = useRef<HTMLTextAreaElement>(null);
+
+    const askUserImagePrompt = useCallback((signal?: AbortSignal): Promise<string | null> => {
+        return new Promise((resolve) => {
+            let settled = false;
+            let timer: ReturnType<typeof setTimeout> | undefined;
+            const settle = (value: string | null) => {
+                if (settled) return;
+                settled = true;
+                if (timer !== undefined) clearTimeout(timer);
+                setImagePromptDialog(null);
+                resolve(value);
+            };
+            if (signal?.aborted) { settle(null); return; }
+            const onAbort = () => settle(null);
+            signal?.addEventListener("abort", onAbort, { once: true });
+            timer = setTimeout(() => settle(null), 60_000);
+            setImagePromptDialog({
+                resolve: (value) => {
+                    signal?.removeEventListener("abort", onAbort);
+                    settle(value === undefined ? null : value);
+                },
+            });
+        });
+    }, []);
+
     const buildAssistantMessageDraft = (
         part: ParsedMessagePart,
         draft: AssistantMessageDraft,
@@ -2600,19 +2638,44 @@ export function ChatRoom({ session, onBack }: ChatRoomProps) {
         };
     };
 
-    const scheduleGeneratedImageReplacement = (
+    const scheduleGeneratedImageReplacement = async (
         message: ChatMessage,
         characterId?: string,
         guard?: GenerationRunGuard,
     ): Promise<ChatMessage | null> => {
-        if (!isPendingChatGeneratedImageMessage(message)) return Promise.resolve(null);
-        return generateAndApplyChatGeneratedImage(message, characterId || session.contactId, { signal: guard?.signal })
-            .catch(error => {
-                if (!isAbortLikeError(error)) {
-                    console.warn("[ImageGeneration] Failed to generate chat image:", error);
+        if (!isPendingChatGeneratedImageMessage(message)) return null;
+        let overrideExtraPrompt: string | undefined;
+        try {
+            if (loadImageGenerationSettings().askPromptOnUserRequest) {
+                const flagKey = IMAGE_PROMPT_REQUEST_PREFIX + session.id;
+                const raw = kvGet(flagKey);
+                if (raw) {
+                    kvRemove(flagKey);
+                    let fresh = true;
+                    try {
+                        const parsed = JSON.parse(raw) as { t?: number };
+                        if (parsed && typeof parsed.t === "number" && Date.now() - parsed.t > IMAGE_PROMPT_REQUEST_TTL_MS) {
+                            fresh = false;
+                        }
+                    } catch { /* 格式异常按最新标记处理 */ }
+                    if (fresh) {
+                        const userPrompt = await askUserImagePrompt(guard?.signal);
+                        overrideExtraPrompt = userPrompt?.trim() || undefined;
+                    }
                 }
-                return null;
+            }
+        } catch { /* 弹窗异常不影响出图 */ }
+        try {
+            return await generateAndApplyChatGeneratedImage(message, characterId || session.contactId, {
+                signal: guard?.signal,
+                overrideExtraPrompt,
             });
+        } catch (error) {
+            if (!isAbortLikeError(error)) {
+                console.warn("[ImageGeneration] Failed to generate chat image:", error);
+            }
+            return null;
+        }
     };
 
     // ── Music Card Click-to-Play ──
@@ -3696,6 +3759,10 @@ export function ChatRoom({ session, onBack }: ChatRoomProps) {
         setQuotingMessage(null);
 
         const commitSendText = (currentText: string) => {
+            // 用户主动要照片的触发词：给本会话打标记，角色本次回复若发照片则弹窗填写提示词
+            if (shouldRequestImagePrompt(currentText)) {
+                kvSet(IMAGE_PROMPT_REQUEST_PREFIX + session.id, JSON.stringify({ t: Date.now() }));
+            }
             // 掷骰子：整条消息就是骰子图标时，发骰子气泡（内容仅图标），
             // 点数由系统旁白公布——避免结果挂在 user 消息上被角色模仿格式
             const diceOnly = !isQuoting && isDiceOnlyMessage(currentText);
@@ -6297,6 +6364,49 @@ export function ChatRoom({ session, onBack }: ChatRoomProps) {
                                 type="button"
                             >保存</button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 生图提示词弹窗：用户主动要照片时填写本次提示词（替换全局补充提示词） */}
+            {imagePromptDialog && (
+                <div className="modal-overlay" data-ui="modal" role="dialog" aria-modal="true" aria-label="填写本次生图提示词">
+                    <div
+                        className="modal-dialog g-card w-[min(84vw,400px)] p-4 flex flex-col gap-3"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex flex-col gap-1">
+                                <span className="menu-label">填写本次生图提示词</span>
+                                <span className="menu-desc !mt-0">将替换全局「补充提示词」，与角色的图片描述一起发送；留空则使用默认。</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => imagePromptDialog.resolve(null)}
+                                className="ui-bare-btn text-[var(--c-icon)] ts-18 leading-none"
+                                aria-label="关闭"
+                            >✕</button>
+                        </div>
+                        <textarea
+                            ref={imagePromptInputRef}
+                            autoFocus
+                            defaultValue=""
+                            placeholder="例如：黄昏逆光、暖色光影、胶片颗粒感…"
+                            className="w-full min-h-[120px] max-h-[40vh] resize-none rounded-2xl border border-[var(--c-border)] bg-[var(--c-input)] px-4 py-3 ts-14 text-[var(--c-text)] outline-none"
+                        />
+                        <div className="flex justify-end gap-2">
+                            <button
+                                type="button"
+                                className="ui-btn ui-btn-outline"
+                                onClick={() => imagePromptDialog.resolve(null)}
+                            >用默认提示词</button>
+                            <button
+                                type="button"
+                                className="ui-btn ui-btn-primary"
+                                onClick={() => imagePromptDialog.resolve(imagePromptInputRef.current?.value?.trim() || null)}
+                            >使用</button>
+                        </div>
+                        <span className="menu-desc !mt-0 opacity-70">60 秒内未填写将自动使用默认提示词</span>
                     </div>
                 </div>
             )}
