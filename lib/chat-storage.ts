@@ -966,6 +966,7 @@ export function deleteCharacterPrivateChats(characterId: string) {
         deleteChatSession(session.id);
         clearFollowUpSchedule(session.id);
         if (typeof window !== "undefined") {
+            kvRemove("pending_friend_reply_" + session.id);
             kvRemove("pending_reply_" + session.id);
         }
     }
