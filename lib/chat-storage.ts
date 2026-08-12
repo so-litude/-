@@ -8,7 +8,7 @@ import {
 } from "./chat-db";
 import { resolveUserIdentity } from "./settings-storage";
 import { loadCharacters } from "./character-storage";
-import { kvGet, kvSet, registerKvMigration } from "./kv-db";
+import { kvGet, kvRemove, kvSet, registerKvMigration } from "./kv-db";
 import { emitChatPluginEvent, runChatPluginTransformSync } from "./chat-plugin-hooks";
 import { parseAIResponse } from "./rich-message-parser";
 import { extractTextToolDirectiveText } from "./text-tool-protocol";
@@ -951,6 +951,25 @@ export function addChatContact(characterId: string): ChatContact | null {
 export function removeChatContact(characterId: string) {
     const contacts = loadChatContacts();
     saveChatContacts(contacts.filter(c => c.characterId !== characterId));
+}
+
+/**
+ * 删除某个角色的全部私聊数据：联系人、私聊会话与会话内消息，
+ * 并清掉该会话的定时追聊与待回复标记。群聊记录保留（群里还有其他角色）。
+ * 用于删除角色卡时联动清理聊天记录。
+ */
+export function deleteCharacterPrivateChats(characterId: string) {
+    const sessions = loadChatSessions();
+    for (const session of sessions) {
+        if (session.isGroup) continue;
+        if (session.contactId !== characterId) continue;
+        deleteChatSession(session.id);
+        clearFollowUpSchedule(session.id);
+        if (typeof window !== "undefined") {
+            kvRemove("pending_reply_" + session.id);
+        }
+    }
+    removeChatContact(characterId);
 }
 
 // ── CRUD for Sessions ─────────────────────────

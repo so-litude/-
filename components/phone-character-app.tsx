@@ -41,6 +41,7 @@ import { ConfirmDialog } from "@/components/ui/modal";
 import { AlertCircle } from "lucide-react";
 import { notifyMascotPageContext } from "@/lib/mascot-events";
 import { kvGet, kvSet } from "@/lib/kv-db";
+import { deleteCharacterPrivateChats } from "@/lib/chat-storage";
 import { normalizeTimeZone } from "@/lib/character-time";
 
 type ViewType = "list" | "detail";
@@ -270,9 +271,10 @@ export function PhoneCharacterApp({ onClose, onNotice }: PhoneCharacterAppProps)
             onDelete={() => {
               if (view.id) {
                 updateChars(characters.filter((c) => c.id !== view.id));
+                deleteCharacterPrivateChats(view.id);
               }
               setView({ type: "list", id: null, isEditing: false });
-              onNotice("已删除档案");
+              onNotice("已删除档案，并清理了与该角色的私聊记录");
             }}
             onExportJson={() => {
               const c = view.id ? characters.find(x => x.id === view.id) : null;
@@ -1292,7 +1294,8 @@ function CharListView({
                 if (!deleteConfirmReady) return;
                 if (deleteConfirm.type === 'char') {
                   onUpdateChars(characters.filter(c => c.id !== deleteConfirm.id));
-                  onNotice?.("已销毁调查档案");
+                  deleteCharacterPrivateChats(deleteConfirm.id);
+                  onNotice?.("已销毁调查档案，并清理了与该角色的私聊记录");
                 } else {
                   onUpdateBgItems((bgItems || []).filter(b => b.id !== deleteConfirm.id));
                   onNotice?.("已销毁散落物件");

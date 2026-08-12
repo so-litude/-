@@ -19,6 +19,7 @@ import {
   Upload,
   UserRound,
   UsersRound,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import { DATA_MODULES, getLightModuleIds } from "@/lib/data-management/modules";
@@ -96,6 +97,7 @@ const MODULE_ICONS: Record<DataModuleId, LucideIcon> = {
   social: UsersRound,
   apps: Smartphone,
   creative: Sparkles,
+  qa: Wrench,
   cache: Archive,
 };
 
@@ -108,6 +110,7 @@ const MODULE_ACCENTS: Record<DataModuleId, string> = {
   social: CONTENT_APP_ACCENTS.moments,
   apps: CONTENT_APP_ACCENTS.calendar,
   creative: CONTENT_APP_ACCENTS.story,
+  qa: BINDING_ACCENTS.api,
   cache: BINDING_ACCENTS.regex,
 };
 

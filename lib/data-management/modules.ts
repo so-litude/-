@@ -127,6 +127,30 @@ export const DATA_MODULES: DataModuleDefinition[] = [
     ],
   },
   {
+    id: "qa",
+    label: "工坊对话",
+    description: "工坊（小坊）答疑会话、上下文与工坊配置",
+    variant: "teal",
+    sources: [
+      { type: "indexeddb", dbName: "AiPhoneQaDB", label: "工坊对话" },
+      {
+        type: "kv",
+        label: "工坊 GitHub 配置",
+        keys: ["ai_phone_qa_github_v1"],
+      },
+      {
+        type: "localStorage",
+        label: "工坊偏好",
+        keys: [
+          "ai_phone_qa_context_budget_chars",
+          "ai_phone_qa_page_chars",
+          "ai_phone_qa_max_rounds",
+          "ai_phone_qa_max_output_tokens",
+        ],
+      },
+    ],
+  },
+  {
     id: "memory",
     label: "记忆",
     description: "长期记忆、核心记忆、事件计数与摘要时间戳",

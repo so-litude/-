@@ -7,6 +7,7 @@ export type DataModuleId =
   | "social"
   | "apps"
   | "creative"
+  | "qa"
   | "cache";
 
 export type IconVariant = "action" | "success" | "warning" | "danger" | "teal";
