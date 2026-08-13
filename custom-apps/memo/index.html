@@ -1,0 +1,4675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>备忘录</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      background: #f0f5ff;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      color: #1a2a3a;
+      font-size: 15px;
+    }
+    .app {
+      min-height: 100dvh;
+      padding: calc(var(--ai-phone-app-safe-top, 88px) + 12px) 16px var(--ai-phone-app-safe-bottom, 24px);
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #d0e0ff;
+      margin-bottom: 12px;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .header-left { display: flex; align-items: center; gap: 6px; }
+    .header h1 { font-size: 20px; font-weight: 600; color: #1a3a6a; }
+    .header .gear-btn {
+      background: none; border: none;
+      font-size: 18px; cursor: pointer;
+      color: #6a8aaa; padding: 0 4px;
+    }
+    .header .gear-btn:active { color: #2a5a8a; transform: rotate(60deg); }
+    .header-right {
+      display: flex; align-items: center; gap: 6px;
+      flex-wrap: wrap; justify-content: flex-end;
+    }
+    .header .friend-badge {
+      font-size: 11px; color: #4a7ab5; background: #e5f0ff;
+      padding: 2px 10px; border-radius: 14px; border: 1px solid #b8d0f0;
+      cursor: pointer; white-space: nowrap;
+    }
+    .header .btn-import-top {
+      padding: 2px 10px; border: 1px solid #b0cce5; border-radius: 14px;
+      background: #fff; color: #2a5a8a; font-size: 11px;
+      cursor: pointer; white-space: nowrap; min-height: 26px;
+    }
+    .header .header-recycle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 10px;
+      border: 1px solid #c8ddf5;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.6);
+      color: #6a8aaa;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      min-height: 26px;
+      line-height: normal;
+    }
+    .header .header-recycle:active { background: #e5effa; }
+
+    .search-area { margin-bottom: 10px; }
+    .search-area input {
+      width: 100%; padding: 6px 14px;
+      border: 1px solid #c8ddf5; border-radius: 20px;
+      font-size: 14px; background: #fff;
+      outline: none;
+    }
+    .search-area input:focus { border-color: #4a8ad0; }
+
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid #dce8f5;
+      margin-bottom: 10px;
+    }
+    .tabs button {
+      flex: 1; background: transparent; border: none;
+      padding: 6px 0; font-size: 14px; font-weight: 500;
+      color: #6a8aaa; cursor: pointer;
+      border-bottom: 3px solid transparent;
+    }
+    .tabs button.active {
+      color: #1a4a7a; border-bottom-color: #2a6ac8; font-weight: 600;
+    }
+
+    .memo-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 80px; }
+
+    .memo-card {
+      background: #fff; border: 1px solid #c8ddf5; border-radius: 12px;
+      padding: 12px 14px; width: 100%;
+      cursor: default;
+    }
+    .memo-card.special { background: #ebf5ff; border-color: #9ac0e8; }
+    .memo-card.daibi { background: #fff; border: 2px solid #2a6ac8; }
+    .memo-card.locked {
+      border: 2px solid #1a3a6a;
+      background: #f5f8ff;
+    }
+
+    .memo-card .memo-header {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 6px; margin-bottom: 2px;
+    }
+    .memo-card .memo-time { font-size: 10px; color: #6a8aaa; white-space: nowrap; }
+    .memo-card .memo-top-right {
+      display: flex; align-items: center; gap: 3px; flex-shrink: 0; flex-wrap: wrap;
+    }
+    .memo-card .badge {
+      font-size: 9px; padding: 0 6px; border-radius: 8px;
+      background: #e5effa; color: #2a5a7a; border: 1px solid #c0d8f0;
+      cursor: default; user-select: none; line-height: 18px;
+    }
+    .memo-card .badge-encrypted {
+      background: #2a4a7a; color: #fff; border-color: #1a3a6a;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+    .memo-card .badge-encrypted.inactive {
+      background: #d4dce8; color: #3a4a5a; border-color: #b0c0d0;
+    }
+    .memo-card .badge-special { background: #b8d8f5; color: #1a3a6a; border-color: #7ab0d8; }
+    .memo-card .badge-reply { background: #d4e8f5; color: #1a4a6a; border-color: #8ab8d8; }
+    .memo-card .badge-daibi { background: #2a6ac8; color: #fff; border-color: #1a4a9a; }
+    .memo-card .badge-daibi-name {
+      background: #2a6ac8; color: #fff; border-color: #1a4a9a;
+      font-weight: 600;
+    }
+    .memo-card .badge-unknown {
+      background: #e8e0d0; color: #6a5a4a; border-color: #c8b8a0;
+      cursor: pointer;
+    }
+    .memo-card .badge-unknown.revealed {
+      background: #d0e5ff; color: #1a4a7a; border-color: #7ab0d8;
+      cursor: default;
+    }
+    .memo-card .badge-lock {
+      font-size: 9px; padding: 0 6px; border-radius: 8px;
+      background: #e5effa; color: #8aaac8; border: 1px solid #c0d8f0;
+      cursor: pointer; user-select: none; line-height: 18px;
+    }
+    .memo-card .badge-lock.active {
+      background: #2a4a7a; color: #fff; border-color: #1a3a6a;
+    }
+
+    .memo-card .memo-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: #084584;
+      line-height: 1.4;
+      margin: 2px 0 1px 0;
+      word-break: break-word;
+    }
+    .memo-card .memo-content {
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 1px 0 4px 0;
+      word-break: break-word;
+      color: #1a2a3a;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+    }
+    .memo-card .memo-thumbs {
+      display: flex; gap: 6px; margin: 6px 0 2px 0; overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .memo-card .memo-thumb {
+      flex-shrink: 0; width: 60px; height: 60px;
+      border: 2px solid #1a3a6a; border-radius: 8px; overflow: hidden;
+      background: #eef4fb;
+    }
+    .memo-card .memo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .memo-card .memo-thumb .thumb-placeholder {
+      width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+      color: #8aaac8; font-size: 11px;
+    }
+
+    .memo-card .memo-bottom {
+      display: flex; justify-content: space-between; align-items: center;
+      border-top: 1px solid #e5eef8; padding-top: 6px; margin-top: 2px;
+      flex-wrap: wrap; gap: 4px;
+    }
+    .memo-card .memo-actions { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+    .memo-card .memo-actions .btn { font-size: 10px; padding: 1px 8px; min-height: 22px; }
+
+    .btn {
+      padding: 4px 12px; border: none; border-radius: 14px;
+      font-size: 12px; font-weight: 500; cursor: pointer;
+      min-height: 30px; border: 1px solid transparent;
+      background: #eaf2fa; color: #2a4a6a;
+    }
+    .btn-primary { background: #2a6ac8; color: #fff; }
+    .btn-primary:active { background: #1a4a9a; }
+    .btn-outline { background: transparent; border: 1px solid #b0cce5; }
+    .btn-outline:active { background: #e5effa; }
+    .btn-danger { background: #d94a4a; color: #fff; }
+    .btn-danger:active { background: #b03030; }
+    .btn-sm { font-size: 10px; padding: 1px 8px; min-height: 22px; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .favorite-star {
+      cursor: pointer; font-size: 16px; color: #b0c8e0;
+      background: none; border: none; padding: 0 2px;
+    }
+    .favorite-star.active { color: #f5b342; }
+
+    .edit-history-btn {
+      font-size: 14px;
+      border: none;
+      background: transparent;
+      padding: 0 2px;
+      cursor: pointer;
+    }
+    .edit-history-btn.disabled {
+      color: #b0c8e0;
+      cursor: default;
+    }
+
+    .reply-expand {
+      margin-top: 6px; padding-top: 6px; border-top: 1px dashed #c8ddf5;
+    }
+    .reply-item {
+      display: flex; align-items: flex-start; gap: 6px;
+      padding: 4px 0; border-bottom: 1px solid #eef4fa;
+    }
+    .reply-item:last-child { border-bottom: none; }
+    .reply-item .reply-body { flex: 1; min-width: 0; }
+    .reply-item .reply-name {
+      font-size: 11px; font-weight: 600; color: #2a4a6a;
+    }
+    .reply-item .reply-name .reply-time {
+      font-weight: 400; color: #8aaac8; font-size: 10px; margin-left: 4px;
+    }
+    .reply-item .reply-text { font-size: 13px; color: #1a2a3a; line-height: 1.4; word-break: break-word; }
+    .reply-item .reply-actions { display: flex; gap: 3px; flex-shrink: 0; }
+    .reply-item .reply-actions .btn { font-size: 9px; padding: 0 6px; min-height: 20px; }
+
+    .fab {
+      position: fixed;
+      bottom: calc(var(--ai-phone-app-safe-bottom, 24px) + 24px);
+      right: 24px;
+      width: 52px; height: 52px; border-radius: 50%;
+      background: #2a6ac8; color: #fff;
+      border: none; font-size: 28px; font-weight: 300;
+      box-shadow: 0 6px 20px rgba(42,106,200,0.35);
+      cursor: pointer; z-index: 50;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .fab:active { transform: scale(0.92); }
+
+    .empty-state { text-align: center; color: #8aaac8; padding: 30px 0 20px; font-size: 14px; }
+
+    .toast {
+      position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+      background: #1a2a4a; color: #f0f7ff; padding: 10px 28px;
+      border-radius: 30px; font-size: 14px; z-index: 3000;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      opacity: 0; transition: opacity 0.25s; pointer-events: none;
+      max-width: 92%; text-align: center; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
+    .toast.wrap { white-space: normal; }
+
+    .error-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;
+      z-index: 3001; padding: 30px;
+    }
+    .error-box {
+      background: #fff5f5; border-radius: 16px; max-width: 380px; width: 100%;
+      padding: 20px; border: 1px solid #e8b0b0;
+    }
+    .error-box h3 { color: #b03030; font-size: 17px; margin-bottom: 8px; }
+    .error-box p { color: #3a2a2a; font-size: 14px; line-height: 1.6; margin-bottom: 12px; max-height: 200px; overflow-y: auto; white-space: pre-wrap; }
+    .error-box .btn { width: 100%; background: #b03030; color: #fff; border: none; padding: 10px; border-radius: 10px; font-size: 15px; cursor: pointer; }
+
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(10,30,60,0.4); backdrop-filter: blur(2px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; padding: 20px;
+    }
+    .modal-overlay.topmost { z-index: 2600; }
+    .modal-box {
+      background: #fff; border-radius: 16px; max-width: 400px; width: 100%;
+      padding: 20px; border: 1px solid #c8ddf5;
+      box-shadow: 0 12px 40px rgba(0,20,50,0.15);
+    }
+    .modal-box h3 { font-size: 17px; color: #1a3a6a; margin-bottom: 8px; }
+    .modal-box textarea, .modal-box input[type="datetime-local"] {
+      width: 100%; padding: 8px 12px; border: 1px solid #d0dff0;
+      border-radius: 8px; font-size: 14px; font-family: inherit;
+      margin-bottom: 10px; background: #fafcff;
+    }
+    .modal-box textarea { min-height: 70px; resize: vertical; }
+    .modal-box .modal-actions {
+      display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px;
+    }
+    .modal-box .modal-actions .btn { min-width: 56px; }
+    .hidden { display: none !important; }
+
+    .dev-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(10,30,60,0.5); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2000; padding: 20px;
+    }
+    .dev-panel {
+      background: #fff; border-radius: 20px; max-width: 400px; width: 100%;
+      padding: 20px; border: 1px solid #c8ddf5;
+      box-shadow: 0 16px 48px rgba(10,30,60,0.2);
+      margin-top: calc(var(--ai-phone-app-safe-top, 88px) * 0.5);
+      max-height: 78vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .dev-panel .dev-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;
+    }
+    .dev-panel .dev-header h3 { font-size: 17px; color: #1a3a6a; margin: 0; }
+    .dev-panel .dev-close { background: none; border: none; font-size: 22px; color: #8aaac8; cursor: pointer; }
+    .dev-panel .dev-group { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e5eef8; }
+    .dev-panel .dev-group:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .dev-panel .dev-group-title {
+      font-size: 13px; font-weight: 600; color: #2a4a6a; margin-bottom: 6px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .dev-panel .dev-group-title .dev-reset-small {
+      font-size: 11px; font-weight: 400; color: #5a7a9a;
+      background: #eaf2fa; border: 1px solid #c0d8f0;
+      border-radius: 10px; padding: 1px 10px;
+      cursor: pointer; min-height: 22px;
+    }
+    .dev-panel .dev-group-title .dev-reset-small:active { background: #dce6f2; }
+    .dev-panel .dev-row {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 3px;
+    }
+    .dev-panel .dev-row label {
+      display: flex; align-items: center; gap: 4px; font-size: 12px; color: #3a5a7a;
+      cursor: pointer;
+    }
+    .dev-panel .dev-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: #3a7ac8; }
+    .dev-panel .dev-row input[type="number"] {
+      width: 50px; padding: 2px 4px; border: 1px solid #d0dff0; border-radius: 4px;
+      font-size: 12px; text-align: center; background: #fafcff;
+    }
+    .dev-panel .dev-row input[type="number"]:disabled { background: #f0f4fa; color: #8aaac8; }
+    .dev-panel .dev-row .dev-label { font-size: 11px; color: #5a7a9a; }
+    .dev-panel .dev-row .dev-btn-gen {
+      padding: 2px 14px; border: none; border-radius: 12px;
+      background: #2a6ac8; color: #fff; font-size: 12px;
+      cursor: pointer; min-height: 26px;
+    }
+    .dev-panel .dev-row .dev-btn-gen:active { background: #1a4a9a; }
+    .dev-panel .dev-actions {
+      display: flex; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5eef8;
+    }
+    .dev-panel .dev-actions .btn { flex: 1; padding: 6px; border-radius: 10px; font-size: 12px; text-align: center; }
+    .dev-panel .dev-actions .btn-close-panel { background: #2a6ac8; color: #fff; }
+
+    .friend-select-list {
+      display: flex; flex-direction: column; gap: 4px; margin: 8px 0; max-height: 160px; overflow-y: auto;
+    }
+    .friend-select-list button {
+      padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px;
+      background: #f8fafc; text-align: left; font-size: 13px; cursor: pointer; min-height: 34px;
+    }
+    .friend-select-list button:active { background: #e2e8f0; }
+
+    .recycle-list {
+      display: flex; flex-direction: column; gap: 4px; margin: 8px 0; max-height: 200px; overflow-y: auto;
+    }
+    .recycle-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 10px; border-bottom: 1px solid #eef4fa;
+      font-size: 13px;
+    }
+    .recycle-item .recycle-content {
+      flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .recycle-item .recycle-time {
+      font-size: 10px; color: #8aaac8; margin: 0 8px;
+    }
+    .recycle-item .recycle-actions { display: flex; gap: 4px; }
+    .recycle-item .recycle-actions .btn {
+      font-size: 9px; padding: 0 6px; min-height: 20px;
+    }
+
+    .curious-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(10,30,60,0.5); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1500; padding: 20px;
+    }
+    .curious-panel {
+      background: #fff; border-radius: 20px; width: 80%; max-width: 400px;
+      padding: 18px; border: 1px solid #c8ddf5;
+      box-shadow: 0 16px 48px rgba(10,30,60,0.25);
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .curious-panel .curious-body {
+      display: flex; gap: 12px; align-items: center; min-height: 44px;
+    }
+    .curious-panel .curious-name-box {
+      flex-shrink: 0; text-align: center;
+      padding: 4px 12px; border: 2px solid #b8d8f5; border-radius: 10px;
+      background: #f5faff; min-width: 50px;
+    }
+    .curious-panel .curious-name-box .name {
+      font-size: 14px; font-weight: 600; color: #1a4a7a;
+    }
+    .curious-panel .curious-text {
+      flex: 1; font-size: 14px; line-height: 1.5; color: #1a2a3a; word-break: break-word;
+    }
+    .curious-panel .curious-actions {
+      display: flex; gap: 10px; justify-content: center; padding-top: 6px; border-top: 1px solid #e5eef8;
+    }
+    .curious-panel .curious-actions .btn { min-width: 64px; }
+    .curious-panel .curious-actions .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .reading-progress {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+      background: #fff; border: 1px solid #c8ddf5; border-radius: 14px;
+      padding: 14px 20px; max-width: 340px; width: 90%; z-index: 1500;
+      box-shadow: 0 8px 32px rgba(10,30,60,0.2); text-align: center;
+    }
+    .reading-progress .progress-text { font-size: 13px; color: #2a4a6a; margin-bottom: 6px; }
+    .reading-progress .progress-bar { width: 100%; height: 4px; background: #e5effa; border-radius: 2px; overflow: hidden; }
+    .reading-progress .progress-bar .fill { height: 100%; background: #2a6ac8; width: 0%; transition: width 0.1s linear; border-radius: 2px; }
+
+    .reply-detail-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(10,30,60,0.5); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1600; padding: 20px;
+    }
+    .reply-detail-panel {
+      background: #fff; border-radius: 20px; width: 85%; max-width: 400px;
+      padding: 18px; border: 1px solid #c8ddf5;
+      box-shadow: 0 16px 48px rgba(10,30,60,0.25);
+    }
+    .reply-detail-panel .rd-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+    }
+    .reply-detail-panel .rd-header .rd-name {
+      font-size: 15px; font-weight: 600; color: #1a3a6a;
+    }
+    .reply-detail-panel .rd-header .rd-actions { display: flex; gap: 4px; }
+    .reply-detail-panel .rd-header .rd-actions .btn {
+      font-size: 10px; padding: 1px 8px; min-height: 22px;
+      border: none; border-radius: 12px; background: #eaf2fa; color: #2a4a6a; cursor: pointer;
+    }
+    .reply-detail-panel .rd-header .rd-actions .btn-danger-sm { background: #f5e0e0; color: #b03030; }
+    .reply-detail-panel .rd-content {
+      font-size: 14px; line-height: 1.6; color: #1a2a3a;
+      padding: 6px 0 10px; border-bottom: 1px solid #e5eef8;
+      min-height: 40px; word-break: break-word;
+    }
+    .reply-detail-panel .rd-footer {
+      display: flex; gap: 8px; justify-content: flex-end; padding-top: 10px;
+    }
+    .reply-detail-panel .rd-footer .btn { min-width: 56px; }
+    .reply-detail-panel .rd-footer .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .share-target-list {
+      display: flex; flex-direction: column; gap: 4px; margin: 8px 0; max-height: 160px; overflow-y: auto;
+    }
+    .share-target-list button {
+      padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px;
+      background: #f8fafc; text-align: left; font-size: 13px; cursor: pointer; min-height: 34px;
+    }
+    .share-target-list button:active { background: #e2e8f0; }
+
+    .file-input-hidden { display: none; }
+
+    .guess-list {
+      display: flex; flex-direction: column; gap: 4px; margin: 8px 0; max-height: 130px; overflow-y: auto;
+    }
+    .guess-list button {
+      padding: 6px 12px; border: 1px solid #e2e8f0; border-radius: 8px;
+      background: #f8fafc; text-align: left; font-size: 13px; cursor: pointer; min-height: 32px;
+    }
+    .guess-list button:active { background: #e2e8f0; }
+
+    .msg-notification-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(10,30,60,0.3); backdrop-filter: blur(3px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1700; padding: 30px;
+    }
+    .msg-notification-box {
+      background: #fff; border-radius: 20px; max-width: 360px; width: 100%;
+      padding: 24px 20px; border: 1px solid #c8ddf5;
+      box-shadow: 0 12px 40px rgba(10,30,60,0.2);
+      text-align: center;
+    }
+    .msg-notification-box .msg-avatar {
+      font-size: 40px; margin-bottom: 8px;
+    }
+    .msg-notification-box .msg-name {
+      font-weight: 600; font-size: 16px; color: #1a3a6a;
+    }
+    .msg-notification-box .msg-actions {
+      display: flex; gap: 12px; justify-content: center; margin-top: 6px;
+    }
+    .msg-notification-box .msg-actions .btn { min-width: 80px; }
+
+    /* ===== 全屏覆盖编辑器 ===== */
+    .mini-editor-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #f0f5ff;
+      display: flex;
+      flex-direction: column;
+      z-index: 2400;
+      overflow: hidden;
+    }
+    .mini-editor-panel {
+      background: #f0f5ff;
+      width: 100%;
+      max-width: none;
+      padding: calc(var(--ai-phone-app-safe-top, 88px) + 6px) 16px calc(var(--ai-phone-app-safe-bottom, 24px) + 16px);
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      flex: 1;
+      min-height: 0;               /* 关键：允许 flex 子项收缩，内容不撑开面板 */
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .mini-editor-panel .edit-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #d0e0ff;
+      margin-bottom: 10px;
+    }
+    .mini-editor-panel .edit-nav-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mini-editor-panel .edit-nav-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mini-editor-panel .edit-nav-btn {
+      font-size: 14px;
+      font-weight: 500;
+      padding: 4px 16px;
+      border-radius: 8px;
+      border: 2px solid #16325c;
+      background: #2a5a8a;
+      color: #fff;
+      cursor: pointer;
+      min-height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+    .mini-editor-panel .edit-nav-btn:active {
+      background: #0f3a5a;
+    }
+    .mini-editor-panel .edit-nav-btn-plain {
+      font-size: 18px;
+      font-weight: 300;
+      padding: 4px 6px;
+      border: none;
+      background: transparent;
+      color: #2a4a6a;
+      cursor: pointer;
+      min-height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+    .mini-editor-panel .edit-nav-btn-plain:active {
+      color: #1a3a5a;
+    }
+    .mini-editor-panel .edit-title-input {
+      font-size: 20px;
+      font-weight: 600;
+      color: #084584;
+      border: 2px solid #7ebcf5;
+      border-radius: 6px;
+      padding: 8px 12px;
+      width: 100%;
+      background: #fff;
+      outline: none;
+      font-family: inherit;
+      margin-bottom: 8px;
+    }
+    .mini-editor-panel .edit-title-input:focus {
+      border-color: #2a6ac8;
+    }
+    .mini-editor-panel .edit-divider {
+      border: none;
+      border-top: 3px solid #7ebcf5;
+      margin: 4px 0 8px 0;
+    }
+    .mini-editor-panel .edit-char-count {
+      text-align: right;
+      font-size: 11px;
+      color: #8aaac8;
+      margin-top: 4px;
+    }
+    /* 全屏编辑：blocks 容器（真正的滚动区域） */
+    .mini-editor-panel .edit-blocks {
+      flex: 1;
+      min-height: 0;               /* 关键：作为滚动容器必须允许收缩 */
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-bottom: 70px;
+    }
+    .mini-editor-panel .edit-block-text {
+      flex: none;                /* 关键：滚动列表里的子项禁止被 flex 压缩 */
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #c8ddf5;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      line-height: 1.6;
+      background: #ffffff;
+      color: #1a2a3a;
+      outline: none;
+      resize: none;
+      min-height: 44px;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+    .mini-editor-panel .edit-block-text:focus {
+      border-color: #2a6ac8;
+    }
+    .mini-editor-panel .edit-block-image {
+      flex: none;                /* 关键：滚动列表里的子项禁止被 flex 压缩 */
+      width: 100%;
+      border: 2px solid #1a3a6a;
+      border-radius: 6px;
+      background: #eef4fb;
+      overflow: hidden;
+      box-sizing: border-box;
+      min-height: 120px;            /* 加载完成前的占位高度，避免显示成短横杠 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+    }
+    .mini-editor-panel .edit-block-image img {
+      display: block;
+      max-width: 100%;
+      max-height: 55vh;
+      width: auto;
+      height: auto;
+      -webkit-user-drag: none;
+      user-drag: none;
+      pointer-events: none;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    /* 密友/角色代写的文本框：特殊配色（比用户文本框更浅的蓝）+ 顶部"来自xx"小标签（不可编辑、不占正文行） */
+    .mini-editor-panel .edit-block-text-wrap {
+      flex: none;                /* 滚动列表里的子项禁止被 flex 压缩 */
+      width: 100%;
+      border: 2px solid #d0e2f5;   /* 比用户文本框边框 #c8ddf5 更浅 */
+      border-radius: 6px;
+      background: #f2f9ff;         /* 极浅的蓝 */
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+    .mini-editor-panel .edit-block-text-wrap .edit-block-author {
+      font-size: 7px;            /* 约为正文 14px 的一半 */
+      line-height: 1.6;
+      color: #7a9cc0;
+      background: #e4f1fc;
+      padding: 1px 10px;
+      border-bottom: 1px dashed #d0e4f5;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      pointer-events: none;
+    }
+    .mini-editor-panel .edit-block-text-wrap .edit-block-text {
+      border: none;
+      border-radius: 0;
+      background: transparent;
+    }
+    .mini-editor-panel .edit-blocks-empty {
+      color: #8aaac8; text-align: center; padding: 40px 16px; font-size: 14px;
+      cursor: pointer; border: 2px dashed #c8ddf5; border-radius: 10px;
+    }
+    /* 编辑区右下角 + 按钮与展开菜单 */
+    .edit-fab-wrap {
+      position: fixed;
+      right: 24px;
+      bottom: calc(var(--ai-phone-app-safe-bottom, 24px) + 24px);
+      z-index: 2450;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+    }
+    .edit-fab {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: #2a6ac8; color: #fff;
+      border: none; font-size: 28px; font-weight: 300;
+      box-shadow: 0 6px 20px rgba(42,106,200,0.35);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .edit-fab:active { transform: scale(0.92); }
+    .edit-fab-menu {
+      display: flex; flex-direction: column; gap: 6px;
+      background: rgba(20,40,70,0.85);
+      border: 1px solid #7aa8d8;
+      border-radius: 10px;
+      padding: 6px;
+    }
+    .edit-fab-menu button {
+      padding: 8px 14px; border: none; border-radius: 6px;
+      background: #2a5a8a; color: #fff; font-size: 13px;
+      cursor: pointer; min-height: 32px;
+    }
+    .edit-fab-menu button:active { background: #1a4a7a; }
+    /* 长按半透明菜单 */
+    .block-menu {
+      position: fixed; left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(20,40,70,0.9);
+      border: 1px solid #7aa8d8;
+      border-radius: 12px;
+      padding: 6px;
+      display: flex; flex-direction: column; gap: 4px;
+      z-index: 2600;
+      min-width: 120px;
+    }
+    .block-menu button {
+      padding: 8px 16px; border: none; border-radius: 8px;
+      background: transparent; color: #fff; font-size: 13px;
+      cursor: pointer; min-height: 34px; text-align: center;
+    }
+    .block-menu button:active { background: rgba(255,255,255,0.15); }
+    /* 图片详情查看 */
+    .image-detail-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(5,15,30,0.94);
+      z-index: 2700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .image-detail-box {
+      width: 100%; height: 100%;
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .image-detail-close {
+      position: fixed; top: calc(var(--ai-phone-app-safe-top, 88px) + 4px); right: 16px;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.15); color: #fff;
+      border: 1px solid rgba(255,255,255,0.4);
+      font-size: 16px; cursor: pointer; z-index: 2701;
+    }
+    .image-detail-stage {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+    .image-detail-stage img {
+      max-width: 96%; max-height: 96%;
+      object-fit: contain;
+      transform-origin: center center;
+      transition: transform 0.05s;
+    }
+  </style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="header">
+    <div class="header-left">
+      <h1>备忘录</h1>
+      <button class="gear-btn" id="gearBtn">⚙️</button>
+    </div>
+    <div class="header-right">
+      <span class="friend-badge" id="friendBadge">未绑定密友</span>
+      <button class="btn-import-top" id="importExportBtn">导入/导出</button>
+      <span class="header-recycle" id="headerRecycle">回收站</span>
+    </div>
+  </div>
+
+  <div class="search-area">
+    <input type="text" id="searchInput" placeholder="搜索备忘录、角色回复、角色留言...">
+  </div>
+
+  <div class="tabs">
+    <button class="active" data-tab="all">全部</button>
+    <button data-tab="favorites">收藏</button>
+  </div>
+
+  <div class="memo-list" id="memoList">
+    <div class="empty-state">还没有备忘录，写一条吧</div>
+  </div>
+
+  <button class="fab" id="fabAdd">+</button>
+</div>
+
+<!-- 调试工具 -->
+<div class="dev-overlay hidden" id="devOverlay">
+  <div class="dev-panel">
+    <div class="dev-header" style="display:flex; align-items:center; justify-content:space-between;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <h3>⚙️ 调试工具</h3>
+        <button class="dev-reset-small" id="devResetDefaults">重置</button>
+      </div>
+      <button class="dev-close" id="devClose">✕</button>
+    </div>
+    <div class="dev-group">
+      <div class="dev-group-title">密友设置</div>
+      <div class="dev-row">
+        <label><input type="checkbox" id="devFriendReadLimit"> 密友读取限制</label>
+        <span style="font-size:11px;color:#5a7a9a;">开启后密友受逻辑链限制</span>
+      </div>
+    </div>
+    <div class="dev-group">
+      <div class="dev-group-title">角色留言</div>
+      <div class="dev-row">
+        <label><input type="checkbox" id="devSpecialEnabled" checked> 启用角色留言（每日随机 + 调试生成）</label>
+      </div>
+      <div class="dev-row">
+        <span class="dev-label">每日条数</span>
+        <input type="number" id="devSpecialCount" value="1" min="0" max="10">
+        <span class="dev-value">条/天</span>
+      </div>
+      <div class="dev-row">
+        <button class="dev-btn-gen" id="devSpecialGen">生成 1 条</button>
+      </div>
+      <div class="dev-row">
+        <span class="dev-label">指定角色：</span>
+        <span class="dev-label" id="devSpecialCharsLabel" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部角色</span>
+      </div>
+      <div class="dev-row">
+        <button class="dev-btn-gen" id="devSpecialCharsBtn">选择角色</button>
+        <button class="dev-btn-gen" id="devSpecialCharsClear" style="background:#8a4a4a;">清空</button>
+      </div>
+    </div>
+    <div class="dev-group">
+      <div class="dev-group-title">角色回复</div>
+      <div class="dev-row">
+        <label><input type="checkbox" id="devReplyEnabled" checked> 启用角色回复（每日随机 + 调试生成）</label>
+      </div>
+      <div class="dev-row">
+        <span class="dev-label">每日条数</span>
+        <input type="number" id="devReplyCount" value="1" min="0" max="10">
+        <span class="dev-value">条/天</span>
+      </div>
+      <div class="dev-row">
+        <button class="dev-btn-gen" id="devReplyGen">生成 1 条</button>
+      </div>
+      <div class="dev-row">
+        <span class="dev-label">指定角色：</span>
+        <span class="dev-label" id="devReplyCharsLabel" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">全部角色</span>
+      </div>
+      <div class="dev-row">
+        <button class="dev-btn-gen" id="devReplyCharsBtn">选择角色</button>
+        <button class="dev-btn-gen" id="devReplyCharsClear" style="background:#8a4a4a;">清空</button>
+      </div>
+    </div>
+<div class="dev-group">
+  <div class="dev-group-title">
+    <span>好奇机制</span>
+  </div>
+  <div class="dev-row">
+    <span class="dev-label">触发概率</span>
+    <input type="number" id="devCuriousProb" value="50" min="0" max="100">
+    <span class="dev-value">%</span>
+  </div>
+  <div class="dev-row">
+    <span class="dev-label">放弃概率</span>
+    <input type="number" id="devRefuseGiveupProb" value="70" min="0" max="100">
+    <span class="dev-value">%</span>
+  </div>
+  <div class="dev-row">
+    <span class="dev-label">放弃消息概率</span>
+    <input type="number" id="devGiveupProb" value="30" min="0" max="100">
+    <span class="dev-value">%</span>
+  </div>
+  <div class="dev-row">
+    <span class="dev-label">好奇对象</span>
+    <label><input type="checkbox" id="devCuriousEncrypted" checked> 加密</label>
+    <label><input type="checkbox" id="devCuriousUnencrypted"> 未加密</label>
+  </div>
+  <div class="dev-row">
+    <label><input type="checkbox" id="devCareEnabled" checked> 关怀机制（负面情绪→安慰消息）</label>
+  </div>
+  <div class="dev-row">
+    <label><input type="checkbox" id="devCuriousSendMsg" checked> 好奇同意后主动发消息</label>
+  </div>
+</div>
+    <div class="dev-group">
+      <div class="dev-group-title">好奇机制 · 强制同意（二选一）</div>
+      <div class="dev-row">
+        <label><input type="radio" name="forceMode" id="devForceProbMode"> 概率触发</label>
+        <span class="dev-label">概率</span>
+        <input type="number" id="devForceProb" value="100" min="0" max="100" disabled>
+        <span class="dev-value">%</span>
+      </div>
+      <div class="dev-row">
+        <label><input type="radio" name="forceMode" id="devForceCondMode" checked> 条件触发</label>
+        <span style="font-size:11px;color:#5a7a9a;">（三选二+</span>
+        <input type="number" id="devForceRollProb" value="10" min="0" max="100" style="width:50px;padding:2px 4px;border:1px solid #d0dff0;border-radius:4px;font-size:12px;text-align:center;background:#fafcff;">
+        <span style="font-size:11px;color:#5a7a9a;">%roll）</span>
+      </div>
+      <div class="dev-row">
+        <span class="dev-label">假放弃概率</span>
+        <input type="number" id="devFakeGiveupProb" value="33" min="0" max="100">
+        <span class="dev-value">%</span>
+      </div>
+    </div>
+    <div class="dev-group">
+      <div class="dev-group-title">
+        <span>自定义 CSS</span>
+        <button class="dev-reset-small" id="devCssClear">清空</button>
+      </div>
+      <textarea id="devCustomCss" placeholder="输入自定义 CSS，如：body, .app { background: #ffe8e8; }" style="width:100%;min-height:80px;padding:8px 10px;border:1px solid #d0dff0;border-radius:8px;font-size:12px;font-family:monospace;box-sizing:border-box;background:#fafcff;"></textarea>
+      <div style="font-size:11px;color:#8aaac8;margin-top:4px;">保存后立即生效；背景类样式建议写 body, .app { ... }。</div>
+    </div>
+    <div class="dev-actions">
+      <button class="btn btn-close-panel" id="devConfirmClose">确认并关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 缩小版全屏编辑器（新建/编辑通用） -->
+<div class="mini-editor-overlay hidden" id="miniEditorOverlay">
+  <div class="mini-editor-panel">
+    <div class="edit-nav">
+      <div class="edit-nav-left">
+        <button class="edit-nav-btn" id="miniEditBack">返回</button>
+      </div>
+      <div class="edit-nav-right">
+        <button class="edit-nav-btn-plain" id="miniEditUndo">◄</button>
+        <button class="edit-nav-btn-plain" id="miniEditRedo">►</button>
+        <button class="edit-nav-btn-plain" id="miniEditSave">✓</button>
+      </div>
+    </div>
+    <input class="edit-title-input" id="miniEditTitle" placeholder="标题..." maxlength="999999">
+    <hr class="edit-divider">
+    <div class="edit-blocks" id="miniEditBlocks"></div>
+    <div class="edit-char-count" id="miniEditCharCount">0</div>
+    <div class="edit-fab-wrap">
+      <div class="edit-fab-menu hidden" id="editFabMenu">
+        <button id="editAddText">新增文本框</button>
+        <button id="editAddImage">添加图片</button>
+      </div>
+      <button class="edit-fab" id="editFabAdd">+</button>
+    </div>
+  </div>
+</div>
+
+<!-- 导入/导出 -->
+<div class="modal-overlay hidden" id="importModal">
+  <div class="modal-box">
+    <div class="modal-header-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <h3>导入 / 导出</h3>
+      <button style="background:none;border:none;font-size:20px;color:#6a8aaa;cursor:pointer;" id="importClose">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button class="btn btn-outline" id="getJsonFormatBtn" style="padding:10px;font-size:14px;">获得 json 格式</button>
+      <button class="btn btn-outline" id="importFileBtn" style="padding:10px;font-size:14px;">导入（选择文件）</button>
+      <label style="font-size:12px;color:#3a5a7a;display:flex;align-items:center;gap:6px;justify-content:center;padding:0 4px;">
+        <input type="checkbox" id="exportIncludeImages" checked> 导出时包含图片（内嵌 base64，文件较大）
+      </label>
+      <button class="btn btn-primary" id="batchExportBtn" style="padding:10px;font-size:14px;">导出全部（下载）</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileInput" class="file-input-hidden" accept=".json">
+<input type="file" id="imageFileInput" class="file-input-hidden" accept="image/*">
+
+<!-- 确认 -->
+<div class="modal-overlay hidden" id="confirmModal">
+  <div class="modal-box">
+    <h3 id="confirmTitle">确认</h3>
+    <p id="confirmMessage" style="margin-bottom:12px;color:#3a5a7a;font-size:14px;"></p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="confirmNo">取消</button>
+      <button class="btn btn-danger" id="confirmYes">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ---- 常量 ----
+  const MAX_LEN = 999999;
+  const RECYCLE_LIMIT = 20;
+
+  // ---- 状态 ----
+  let memos = [], currentTab = 'all', editingId = null, confirmCb = null, expandState = {}, curiousActive = false, searchQuery = '';
+  let revealedMap = {};
+  let recycleBin = [];
+  let denseFriendId = null;
+  let dev = { special: true, reply: true, curiousProb: 50, giveupProb: 30, forceMode: 'cond', forceProb: 100, friendReadLimit: false, forceRollProb: 10, curiousTarget: { encrypted: true, unencrypted: false }, fakeGiveupProb: 33, refuseGiveupProb: 70, specialChars: [], replyChars: [], customCss: '', careEnabled: true, curiousSendMsg: true, specialCount: 1, replyCount: 1 };
+  let memoEditHistory = {};
+  const MAX_HISTORY = 3;
+  let memosLoaded = false;
+
+  let curiousCtx = {
+    characterId: null, characterName: '', attempt: 0,
+    maxAttempts: 5,
+    isForce: false, memoContent: '', memoId: null,
+    forceMaxAttempts: 4,
+    fakeGiveupUsed: false
+  };
+  let giveupMessageSent = false;
+  let specialTriggerToday = 0;
+  let replyTriggerToday = 0;
+  let lastSpecialDate = '';
+  let lastReplyDate = '';
+  let giveupLock = false;
+
+  // ---- 缩小版编辑器状态 ----
+  let miniEditorState = {
+    isOpen: false,
+    memoId: null,
+    isNew: false,
+    title: ''
+  };
+
+  // ---- DOM ----
+  const $ = id => document.getElementById(id);
+  const memoList = $('memoList'), searchInput = $('searchInput'), gearBtn = $('gearBtn'), fabAdd = $('fabAdd');
+  const headerRecycle = $('headerRecycle');
+  const devOverlay = $('devOverlay'), devClose = $('devClose'), devConfirm = $('devConfirmClose');
+  const importModal = $('importModal'), importClose = $('importClose'), getJsonFormatBtn = $('getJsonFormatBtn'), importFileBtn = $('importFileBtn');
+  const importExportBtn = $('importExportBtn');
+  const batchExportBtn = $('batchExportBtn'), fileInput = $('fileInput'), imageFileInput = $('imageFileInput');
+  const confirmModal = $('confirmModal'), confirmTitle = $('confirmTitle'), confirmMessage = $('confirmMessage'), confirmNo = $('confirmNo'), confirmYes = $('confirmYes');
+  const friendBadge = $('friendBadge');
+  const toastEl = $('toast');
+  let toastTimer = null;
+
+  // 缩小版编辑器 DOM
+  const miniEditorOverlay = $('miniEditorOverlay');
+  const miniEditBack = $('miniEditBack');
+  const miniEditSave = $('miniEditSave');
+  const miniEditUndo = $('miniEditUndo');
+  const miniEditRedo = $('miniEditRedo');
+  const miniEditTitle = $('miniEditTitle');
+  const miniEditBlocks = $('miniEditBlocks');
+  const miniEditCharCount = $('miniEditCharCount');
+  const editFabAdd = $('editFabAdd');
+  const editFabMenu = $('editFabMenu');
+  const editAddText = $('editAddText');
+  const editAddImage = $('editAddImage');
+
+  // ---- 工具 ----
+  function showToast(msg, wrap) {
+    toastEl.textContent = msg;
+    toastEl.className = 'toast' + (wrap ? ' wrap' : '');
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+  }
+  function showError(title, msg) {
+    console.error('[ERROR]', title, msg);
+    const old = document.querySelector('.error-overlay');
+    if (old) old.remove();
+    const el = document.createElement('div');
+    el.className = 'error-overlay';
+    el.innerHTML = `<div class="error-box"><h3>⚠️ ${title}</h3><p>${String(msg || '未知错误')}</p><button class="btn" onclick="this.closest('.error-overlay').remove()">我知道了</button></div>`;
+    document.body.appendChild(el);
+  }
+  function logInfo(s, m) { console.log(`[${s}] ${m}`); }
+  function logWarn(s, m) { console.warn(`[${s}] ${m}`); }
+  function formatTime(iso) {
+    if (!iso) return '无效时间';
+    try { const d = new Date(iso); if (isNaN(d.getTime())) return '无效时间'; const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+    catch(e) { return '无效时间'; }
+  }
+  function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
+  function todayStr() { return new Date().toISOString().slice(0,10); }
+  function getNowLocal() { return new Date().toISOString().slice(0,16); }
+  function cleanAI(t) { if (!t) return ''; let c=t; c=c.replace(/<thinking>[\s\S]*?<\/thinking>/gi,''); c=c.replace(/【思考】[\s\S]*?【\/思考】/g,''); c=c.split('\n').filter(l=>l.trim()).join('\n'); return c.trim(); }
+  function escHtml(t) { if (!t) return ''; const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+
+  function showConfirm(title, msg, cb, topmost) {
+    confirmTitle.textContent = title;
+    confirmMessage.textContent = msg;
+    confirmCb = cb;
+    confirmModal.classList.toggle('topmost', !!topmost);
+    confirmModal.classList.remove('hidden');
+  }
+  function closeConfirm() { confirmModal.classList.add('hidden'); confirmModal.classList.remove('topmost'); confirmCb = null; }
+
+  // 自定义弹窗：角色发来新消息（不展示消息内容，只提示去看）
+  function showMessageNotification(characterName, characterId) {
+    const old = document.querySelector('.msg-notification-overlay');
+    if (old) old.remove();
+    const ov = document.createElement('div');
+    ov.className = 'msg-notification-overlay';
+    ov.innerHTML = `
+      <div class="msg-notification-box">
+        <div class="msg-avatar">💬</div>
+        <div class="msg-name">${escHtml(characterName)}</div>
+        <div style="margin:12px 0;font-size:14px;color:#2a3a4a;line-height:1.5;">给你发送了一条新消息，要去看看吗？</div>
+        <div class="msg-actions">
+          <button class="btn btn-outline" id="msgIgnore">暂时不管</button>
+          <button class="btn btn-primary" id="msgView">去看看</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(ov);
+    ov.querySelector('#msgIgnore').addEventListener('click', () => ov.remove());
+    ov.querySelector('#msgView').addEventListener('click', async () => {
+      ov.remove();
+      try {
+        await AiPhone.chat.openConversation({ characterId: characterId });
+      } catch(e) {
+        showToast('跳转失败，请手动打开聊天');
+      }
+    });
+  }
+
+  // ---- 编辑历史持久化（角色编辑工具专用） ----
+  async function loadEditHistory() {
+    try {
+      const cfg = await AiPhone.db.list('config', { limit: 30 });
+      const item = cfg.find(c => c.id === 'memoEditHistory');
+      if (item && item.data) {
+        memoEditHistory = item.data;
+      }
+    } catch(e) { logWarn('HIST_LOAD', e.message); }
+  }
+
+  async function saveEditHistory() {
+    try {
+      const existing = await AiPhone.db.list('config', { limit: 30 });
+      const item = existing.find(c => c.id === 'memoEditHistory');
+      const data = { id: 'memoEditHistory', data: memoEditHistory };
+      if (item) await AiPhone.db.update('config', 'memoEditHistory', data);
+      else await AiPhone.db.create('config', data);
+    } catch(e) { logWarn('HIST_SAVE', e.message); }
+  }
+
+  async function pushEditHistory(memoId, title, content, blocks) {
+    if (!memoEditHistory[memoId]) {
+      memoEditHistory[memoId] = { history: [], index: -1 };
+    }
+    const entry = memoEditHistory[memoId];
+    if (entry.index < entry.history.length - 1) {
+      entry.history = entry.history.slice(0, entry.index + 1);
+    }
+    // 记录 blocks（含 author 标记），撤销/重做时能恢复"来自xx"样式
+    entry.history.push({ title: title || '', content: content || '', blocks: blocks && Array.isArray(blocks) ? JSON.parse(JSON.stringify(blocks)) : null });
+    if (entry.history.length > MAX_HISTORY) {
+      entry.history.shift();
+    }
+    entry.index = entry.history.length - 1;
+    await saveEditHistory();
+  }
+
+  function undoEditHistory(memoId) {
+    const entry = memoEditHistory[memoId];
+    if (!entry || entry.index <= 0) return null;
+    entry.index--;
+    return entry.history[entry.index];
+  }
+
+  function redoEditHistory(memoId) {
+    const entry = memoEditHistory[memoId];
+    if (!entry || entry.index >= entry.history.length - 1) return null;
+    entry.index++;
+    return entry.history[entry.index];
+  }
+
+  // ---- 开发者模式 ----
+  async function loadDevFromDB() {
+    try {
+      const cfg = await AiPhone.db.list('config', { limit: 30 });
+      const item = cfg.find(c => c.id === 'devSettings');
+      if (item && item.data) {
+        dev = { ...dev, ...item.data };
+      }
+    } catch(e) { logWarn('DEV_LOAD', e.message); }
+    applyDevUI();
+  }
+  async function saveDevToDB() {
+    try {
+      const existing = await AiPhone.db.list('config', { limit: 30 });
+      const item = existing.find(c => c.id === 'devSettings');
+      const data = { id: 'devSettings', data: dev };
+      if (item) await AiPhone.db.update('config', 'devSettings', data);
+      else await AiPhone.db.create('config', data);
+    } catch(e) { logWarn('DEV_SAVE', e.message); }
+  }
+  function applyDevUI() {
+    $('devCuriousProb').value = dev.curiousProb;
+    $('devGiveupProb').value = dev.giveupProb;
+    $('devFakeGiveupProb').value = dev.fakeGiveupProb !== undefined ? dev.fakeGiveupProb : 33;
+    $('devRefuseGiveupProb').value = dev.refuseGiveupProb !== undefined ? dev.refuseGiveupProb : 70;
+    $('devForceProb').value = dev.forceProb;
+    $('devForceRollProb').value = dev.forceRollProb !== undefined ? dev.forceRollProb : 10;
+    $('devFriendReadLimit').checked = dev.friendReadLimit;
+    $('devCuriousEncrypted').checked = dev.curiousTarget.encrypted;
+    $('devCuriousUnencrypted').checked = dev.curiousTarget.unencrypted;
+    $('devSpecialEnabled').checked = dev.special;
+    $('devSpecialCount').value = dev.specialCount !== undefined ? dev.specialCount : 1;
+    $('devReplyEnabled').checked = dev.reply;
+    $('devReplyCount').value = dev.replyCount !== undefined ? dev.replyCount : 1;
+    $('devCareEnabled').checked = dev.careEnabled;
+    $('devCuriousSendMsg').checked = dev.curiousSendMsg;
+    $('devCustomCss').value = dev.customCss || '';
+    if (dev.forceMode === 'prob') { $('devForceProbMode').checked = true; $('devForceProb').disabled = false; }
+    else { $('devForceCondMode').checked = true; $('devForceProb').disabled = true; }
+    updateCharLabel('devSpecialCharsLabel', dev.specialChars);
+    updateCharLabel('devReplyCharsLabel', dev.replyChars);
+  }  
+  function readDev() {
+    dev.curiousProb = parseInt($('devCuriousProb').value) || 0;
+    if (dev.curiousProb > 100) dev.curiousProb = 100;
+    if (dev.curiousProb < 0) dev.curiousProb = 0;
+    dev.giveupProb = parseInt($('devGiveupProb').value) || 0;
+    if (dev.giveupProb > 100) dev.giveupProb = 100;
+    if (dev.giveupProb < 0) dev.giveupProb = 0;
+    dev.fakeGiveupProb = parseInt($('devFakeGiveupProb').value) || 0;
+    if (dev.fakeGiveupProb > 100) dev.fakeGiveupProb = 100;
+    if (dev.fakeGiveupProb < 0) dev.fakeGiveupProb = 0;
+    dev.refuseGiveupProb = parseInt($('devRefuseGiveupProb').value) || 0;
+    if (dev.refuseGiveupProb > 100) dev.refuseGiveupProb = 100;
+    if (dev.refuseGiveupProb < 0) dev.refuseGiveupProb = 0;
+    dev.special = $('devSpecialEnabled').checked;
+    dev.specialCount = parseInt($('devSpecialCount').value) || 0;
+    if (dev.specialCount > 10) dev.specialCount = 10;
+    if (dev.specialCount < 0) dev.specialCount = 0;
+    dev.reply = $('devReplyEnabled').checked;
+    dev.replyCount = parseInt($('devReplyCount').value) || 0;
+    if (dev.replyCount > 10) dev.replyCount = 10;
+    if (dev.replyCount < 0) dev.replyCount = 0;
+    dev.careEnabled = $('devCareEnabled').checked;
+    dev.curiousSendMsg = $('devCuriousSendMsg').checked;
+    dev.customCss = $('devCustomCss').value || '';
+    dev.forceMode = $('devForceProbMode').checked ? 'prob' : 'cond';
+    dev.forceProb = parseInt($('devForceProb').value) || 0;
+    if (dev.forceProb > 100) dev.forceProb = 100;
+    if (dev.forceProb < 0) dev.forceProb = 0;
+    dev.forceRollProb = parseInt($('devForceRollProb').value) || 0;
+    if (dev.forceRollProb > 100) dev.forceRollProb = 100;
+    if (dev.forceRollProb < 0) dev.forceRollProb = 0;
+    dev.friendReadLimit = $('devFriendReadLimit').checked;
+    dev.curiousTarget = {
+      encrypted: $('devCuriousEncrypted').checked,
+      unencrypted: $('devCuriousUnencrypted').checked
+    };
+    saveDevToDB();
+  }  
+  function resetDevDefaults() {
+    $('devCuriousProb').value = 50;
+    $('devGiveupProb').value = 30;
+    $('devForceRollProb').value = 10;
+    dev.curiousProb = 50;
+    dev.giveupProb = 30;
+    dev.forceRollProb = 10;
+    dev.curiousTarget = { encrypted: true, unencrypted: false };
+    $('devCuriousEncrypted').checked = true;
+    $('devCuriousUnencrypted').checked = false;
+    dev.fakeGiveupProb = 33;
+    dev.refuseGiveupProb = 70;
+    dev.specialChars = [];
+    dev.replyChars = [];
+    dev.customCss = '';
+    dev.careEnabled = true;
+    dev.curiousSendMsg = true;
+    dev.specialCount = 1;
+    dev.replyCount = 1;
+    $('devSpecialCount').value = 1;
+    $('devReplyCount').value = 1;
+    $('devFakeGiveupProb').value = 33;
+    $('devRefuseGiveupProb').value = 70;
+    $('devCustomCss').value = '';
+    applyDevUI();
+    applyCustomCss();
+    saveDevToDB();
+    showToast('已重置');
+  }
+  function getSettings() {
+    return {
+      curious: { prob: dev.curiousProb },
+      giveup: { prob: dev.giveupProb },
+      force: dev.forceMode === 'prob' ? { mode: 'prob', prob: dev.forceProb } : { mode: 'cond' },
+      friendReadLimit: dev.friendReadLimit,
+      forceRollProb: dev.forceRollProb,
+      fakeGiveupProb: dev.fakeGiveupProb,
+      refuseGiveupProb: dev.refuseGiveupProb
+    };
+  }
+
+  // ---- 随机选角色（支持指定角色白名单，空=全部） ----
+  async function pickRandomChar(whitelist) {
+    let chars = await AiPhone.characters.list();
+    if (!chars || !chars.length) return null;
+    if (whitelist && whitelist.length) {
+      chars = chars.filter(c => whitelist.includes(c.id));
+    }
+    if (!chars.length) return null;
+    return chars[Math.floor(Math.random() * chars.length)];
+  }
+
+  // ---- 指定角色标签显示 ----
+  async function updateCharLabel(elId, ids) {
+    const el = $(elId);
+    if (!el) return;
+    if (!ids || !ids.length) { el.textContent = '全部角色'; return; }
+    try {
+      const chars = await AiPhone.characters.list();
+      const map = {};
+      (chars || []).forEach(c => { map[c.id] = c.name || '未知'; });
+      el.textContent = ids.map(cid => map[cid] || '未知').join('、');
+    } catch(e) { el.textContent = ids.length + ' 个角色'; }
+  }
+
+  // ---- 角色多选弹窗 ----
+  async function openCharPicker(title, current, onSave) {
+    const chars = await AiPhone.characters.list();
+    if (!chars || !chars.length) { showToast('没有角色'); return; }
+    const selected = new Set(current || []);
+    const ov = document.createElement('div');
+    ov.className = 'modal-overlay topmost';
+    ov.innerHTML = `
+      <div class="modal-box">
+        <h3>${escHtml(title)}</h3>
+        <div class="friend-select-list" id="charPickList">
+          ${chars.map(c => `<button data-id="${c.id}" data-name="${escHtml(c.name||'未命名')}" style="${selected.has(c.id)?'background:#d0e5ff;':''}">${escHtml(c.name||'未命名')} ${selected.has(c.id)?'✓':''}</button>`).join('')}
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" id="charPickCancel">取消</button>
+          <button class="btn btn-primary" id="charPickConfirm">确定</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(ov);
+    ov.querySelectorAll('#charPickList button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const name = btn.dataset.name;
+        if (selected.has(id)) { selected.delete(id); btn.style.background = ''; btn.textContent = name; }
+        else { selected.add(id); btn.style.background = '#d0e5ff'; btn.textContent = name + ' ✓'; }
+      });
+    });
+    ov.querySelector('#charPickCancel').addEventListener('click', () => ov.remove());
+    ov.querySelector('#charPickConfirm').addEventListener('click', () => {
+      onSave(Array.from(selected));
+      ov.remove();
+    });
+  }
+
+  // ---- 自定义 CSS 注入 ----
+  function applyCustomCss() {
+    let el = document.getElementById('customCssStyle');
+    if (!el) {
+      el = document.createElement('style');
+      el.id = 'customCssStyle';
+      document.head.appendChild(el);
+    }
+    el.textContent = dev.customCss || '';
+  }
+
+  // ---- 数据 ----
+  // 隐藏运行环境下工具 handler 可能在 loadMemos() 完成前就被宿主调用，
+  // 此时内存 memos 还是空数组，导致"目标备忘录不存在/无记录"等假性失败，
+  // 且 handler 内 saveMemos() 会按空数组比对删除数据库记录（数据丢失风险）。
+  // 此函数供工具/事件 handler 在依赖 memos 前调用，确保数据已就绪。
+  async function ensureMemosLoaded() {
+    if (memosLoaded) return;
+    try {
+      const r = await AiPhone.db.list('memos', { limit: 500 });
+      memos = r || [];
+      memos.sort((a,b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      const cfg = await AiPhone.db.list('config', { limit: 30 });
+      const rv = cfg.find(c => c.id === 'revealedMap');
+      if (rv) revealedMap = rv.data || {};
+      const recycle = cfg.find(c => c.id === 'recycleBin');
+      if (recycle) recycleBin = recycle.data || [];
+      const friend = cfg.find(c => c.id === 'denseFriend');
+      if (friend) denseFriendId = friend.data || null;
+      const devItem = cfg.find(c => c.id === 'devSettings');
+      if (devItem && devItem.data) dev = { ...dev, ...devItem.data };
+      memosLoaded = true;
+    } catch(e) { logWarn('TOOL_LOAD', e.message); }
+  }
+
+  async function loadMemos() {
+    try {
+      const r = await AiPhone.db.list('memos', { limit: 500 });
+      memos = r || [];
+      memos.sort((a,b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      memosLoaded = true;
+      const cfg = await AiPhone.db.list('config', { limit: 30 });
+      const rv = cfg.find(c => c.id === 'revealedMap');
+      if (rv) revealedMap = rv.data || {};
+      const recycle = cfg.find(c => c.id === 'recycleBin');
+      if (recycle) recycleBin = recycle.data || [];
+      const friend = cfg.find(c => c.id === 'denseFriend');
+      if (friend) {
+        denseFriendId = friend.data || null;
+      } else {
+        denseFriendId = null;
+      }
+      if (denseFriendId) {
+        try {
+          const ch = await AiPhone.characters.get(denseFriendId);
+          if (ch) friendBadge.textContent = '密友：' + (ch.name || '未知');
+        } catch(e) {
+          friendBadge.textContent = '密友：' + (denseFriendId || '未知');
+        }
+      } else {
+        friendBadge.textContent = '未绑定密友';
+      }
+      const sc = cfg.find(c => c.id === 'specialCounter');
+      if (sc) { specialTriggerToday = sc.count || 0; lastSpecialDate = sc.date || ''; }
+      const rc = cfg.find(c => c.id === 'replyCounter');
+      if (rc) { replyTriggerToday = rc.count || 0; lastReplyDate = rc.date || ''; }
+      const today = todayStr();
+      if (today !== lastSpecialDate) { specialTriggerToday = 0; lastSpecialDate = today; await saveSpecialCounter(); }
+      if (today !== lastReplyDate) { replyTriggerToday = 0; lastReplyDate = today; await saveReplyCounter(); }
+      const devItem = cfg.find(c => c.id === 'devSettings');
+      if (devItem && devItem.data) {
+        dev = { ...dev, ...devItem.data };
+        applyDevUI();
+      }
+      // 一次性迁移：旧版本曾把「密友读取限制」默认保存为开启，导致密友仍受限。
+      // 迁移后按新默认（密友开放全部）执行一次，此后用户手动开关不再被覆盖。
+      const limitMig = cfg.find(c => c.id === 'friendReadLimitMigrated');
+      if (!limitMig && dev.friendReadLimit === true) {
+        dev.friendReadLimit = false;
+        await saveDevToDB();
+        try { await AiPhone.db.create('config', { id: 'friendReadLimitMigrated', data: true }); } catch(e) {}
+        applyDevUI();
+      }
+      await loadEditHistory();
+      render();
+      tryTriggerDailySpecial();
+    } catch(e) { logWarn('LOAD', e.message); memos = []; memosLoaded = false; render(); }
+  }
+
+  async function saveMemos() {
+    try {
+      const existing = await AiPhone.db.list('memos', { limit: 500 });
+      const eIds = new Set(existing.map(m => m.id));
+      const cIds = new Set(memos.map(m => m.id));
+      for (const o of existing) { if (!cIds.has(o.id)) await AiPhone.db.delete('memos', o.id); }
+      for (const m of memos) {
+        if (eIds.has(m.id)) await AiPhone.db.update('memos', m.id, m);
+        else await AiPhone.db.create('memos', m);
+      }
+      const cfg = await AiPhone.db.list('config', { limit: 30 });
+      const rv = cfg.find(c => c.id === 'revealedMap');
+      if (rv) await AiPhone.db.update('config', 'revealedMap', { id: 'revealedMap', data: revealedMap });
+      else await AiPhone.db.create('config', { id: 'revealedMap', data: revealedMap });
+      const recycle = cfg.find(c => c.id === 'recycleBin');
+      if (recycle) await AiPhone.db.update('config', 'recycleBin', { id: 'recycleBin', data: recycleBin });
+      else await AiPhone.db.create('config', { id: 'recycleBin', data: recycleBin });
+      const friend = cfg.find(c => c.id === 'denseFriend');
+      if (friend) await AiPhone.db.update('config', 'denseFriend', { id: 'denseFriend', data: denseFriendId });
+      else await AiPhone.db.create('config', { id: 'denseFriend', data: denseFriendId });
+      const devItem = cfg.find(c => c.id === 'devSettings');
+      if (devItem) await AiPhone.db.update('config', 'devSettings', { id: 'devSettings', data: dev });
+      else await AiPhone.db.create('config', { id: 'devSettings', data: dev });
+    } catch(e) { logWarn('SAVE', e.message); showToast('保存失败'); }
+  }
+
+  async function saveSpecialCounter() {
+    try {
+      const existing = await AiPhone.db.list('config', { limit: 30 });
+      const cfg = existing.find(c => c.id === 'specialCounter');
+      const data = { id: 'specialCounter', count: specialTriggerToday, date: lastSpecialDate };
+      if (cfg) await AiPhone.db.update('config', 'specialCounter', data);
+      else await AiPhone.db.create('config', data);
+    } catch(e) { logWarn('SAVE_CNT', e.message); }
+  }
+
+  async function saveReplyCounter() {
+    try {
+      const existing = await AiPhone.db.list('config', { limit: 30 });
+      const cfg = existing.find(c => c.id === 'replyCounter');
+      const data = { id: 'replyCounter', count: replyTriggerToday, date: lastReplyDate };
+      if (cfg) await AiPhone.db.update('config', 'replyCounter', data);
+      else await AiPhone.db.create('config', data);
+    } catch(e) { logWarn('SAVE_CNT', e.message); }
+  }
+
+  // ---- 密友绑定 ----
+  async function openFriendSelect() {
+    try {
+      const chars = await AiPhone.characters.list();
+      if (!chars || !chars.length) { showToast('没有角色'); return; }
+      const ov = document.createElement('div');
+      ov.className = 'modal-overlay topmost';
+      ov.innerHTML = `
+        <div class="modal-box">
+          <h3>选择密友</h3>
+          <p style="font-size:12px;color:#6a8aaa;margin-bottom:8px;">${denseFriendId ? '当前密友：' + (chars.find(c => c.id === denseFriendId)?.name || '未知') : '未绑定'}</p>
+          <div class="friend-select-list">
+            ${chars.map(c => `<button data-id="${c.id}" data-name="${escHtml(c.name||'未命名')}" ${c.id === denseFriendId ? 'style="background:#d0e5ff;"' : ''}>${escHtml(c.name||'未命名')} ${c.id === denseFriendId ? '✓' : ''}</button>`).join('')}
+          </div>
+          <div class="modal-actions">
+            ${denseFriendId ? '<button class="btn btn-danger" id="unbindFriend">解绑</button>' : ''}
+            <button class="btn btn-outline" id="friendSelectCancel">取消</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(ov);
+
+      ov.querySelectorAll('.friend-select-list button').forEach(el => {
+        el.addEventListener('click', async () => {
+          const id = el.dataset.id;
+          const name = el.dataset.name;
+          denseFriendId = id;
+          await saveMemos();
+          ov.remove();
+          friendBadge.textContent = '密友：' + name;
+          showToast('已绑定密友：' + name);
+        });
+      });
+      const unbind = ov.querySelector('#unbindFriend');
+      if (unbind) {
+        unbind.addEventListener('click', async () => {
+          denseFriendId = null;
+          await saveMemos();
+          ov.remove();
+          friendBadge.textContent = '未绑定密友';
+          showToast('已解绑密友');
+        });
+      }
+      ov.querySelector('#friendSelectCancel').addEventListener('click', () => ov.remove());
+    } catch(e) { logWarn('FRIEND', e.message); showToast('操作失败'); }
+  }
+
+  // ---- blocks 结构：blocksToContent ----
+  function blocksToContent(blocks) {
+    if (!blocks || !blocks.length) return '';
+    return blocks.map(b => {
+      if (b.type === 'text') return (b.text || '');
+      if (b.type === 'image') return '[图片]';
+      return '';
+    }).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+
+  // ---- CRUD ----
+  async function addMemo(content, encrypted = false, createdAt = null, type = 'user', extra = {}) {
+    if (extra.blocks && Array.isArray(extra.blocks) && extra.blocks.length) {
+      content = blocksToContent(extra.blocks);
+    }
+    if (!content || !content.trim()) { return null; }
+    const now = new Date();
+    const created = createdAt ? new Date(createdAt) : now;
+    const iso = isNaN(created.getTime()) ? now.toISOString() : created.toISOString();
+    const characterId = extra.characterId || null;
+
+    let characterName = extra.characterName || null;
+    if (type === 'user' && !extra._skipUserName) {
+      try {
+        const profile = await AiPhone.user.getProfile();
+        characterName = profile?.name || '用户';
+      } catch(e) { characterName = '用户'; }
+    }
+
+    const memo = {
+      id: genId(),
+      content: content.trim(),
+      encrypted: !!encrypted,
+      favorite: false,
+      locked: false,
+      createdAt: iso,
+      type: type,
+      ...extra,
+      characterId: characterId,
+      characterName: characterName,
+      _hideCharacterName: type === 'user' ? true : false,
+      encryptedOpenTo: []
+    };
+    if (extra._title) {
+      memo._title = extra._title;
+    }
+    if (extra._memoryAppEventId) {
+      memo._memoryAppEventId = extra._memoryAppEventId;
+    }
+    if (extra.encryptedOpenTo) {
+      memo.encryptedOpenTo = extra.encryptedOpenTo;
+    }
+    memos.push(memo);
+    memos.sort((a,b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    await saveMemos();
+    render();
+    return memo;
+  }
+
+  // ---- 加密开放范围设置（长按弹窗） ----
+  async function openEncryptSettings(memoId) {
+    const memo = memos.find(m => m.id === memoId);
+    if (!memo) return;
+    if (memo.locked) {
+      showToast('该备忘录已锁定，无法修改加密设置');
+      return;
+    }
+    const chars = await AiPhone.characters.list();
+    if (!chars || !chars.length) {
+      showToast('没有可用的角色');
+      return;
+    }
+    const currentOpen = memo.encryptedOpenTo || [];
+
+    const ov = document.createElement('div');
+    ov.className = 'modal-overlay topmost';
+    ov.innerHTML = `
+      <div class="modal-box">
+        <div style="font-size:13px;color:#5a7a9a;margin-bottom:6px;">谁可以看</div>
+        <div class="friend-select-list" id="encryptOpenList">
+          ${chars.map(c => `
+            <button data-id="${c.id}" data-name="${escHtml(c.name || '未命名')}" style="${currentOpen.includes(c.id) ? 'background:#d0e5ff;' : ''}">
+              ${escHtml(c.name || '未命名')} ${currentOpen.includes(c.id) ? '✓' : ''}
+            </button>
+          `).join('')}
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" id="encryptCancel">取消</button>
+          <button class="btn btn-primary" id="encryptConfirm">确定</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(ov);
+
+    const list = ov.querySelector('#encryptOpenList');
+    const selectedSet = new Set(currentOpen);
+
+    list.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        if (selectedSet.has(id)) {
+          selectedSet.delete(id);
+          btn.style.background = '';
+          btn.textContent = btn.textContent.replace(' ✓', '');
+        } else {
+          selectedSet.add(id);
+          btn.style.background = '#d0e5ff';
+          btn.textContent = btn.textContent + ' ✓';
+        }
+      });
+    });
+
+    ov.querySelector('#encryptCancel').addEventListener('click', () => ov.remove());
+    ov.querySelector('#encryptConfirm').addEventListener('click', async () => {
+      memo.encryptedOpenTo = Array.from(selectedSet);
+      await saveMemos();
+      ov.remove();
+      showToast('加密开放范围已更新');
+      render();
+    });
+  }
+
+  // ---- 删除、恢复、更新等 ----
+  async function deleteMemo(id, toRecycle = true) {
+    const idx = memos.findIndex(m => m.id === id);
+    if (idx === -1) return false;
+    const memo = memos[idx];
+    if (memo.locked) { showToast('该备忘录已锁定，无法删除'); return false; }
+    if (toRecycle) {
+      recycleBin.unshift({
+        id: memo.id,
+        data: JSON.parse(JSON.stringify(memo)),
+        deletedAt: new Date().toISOString()
+      });
+      if (recycleBin.length > RECYCLE_LIMIT) {
+        recycleBin = recycleBin.slice(0, RECYCLE_LIMIT);
+      }
+    }
+    // 清理记忆（如有）
+    if (memo._memoryAppEventId) {
+      try { await AiPhone.memory.deleteTimeline({ appEventId: memo._memoryAppEventId }); } catch(e) {}
+    }
+    if (memo.replyData && memo.replyData.replies) {
+      for (const r of memo.replyData.replies) {
+        if (r.memoryAppEventId) {
+          try { await AiPhone.memory.deleteTimeline({ appEventId: r.memoryAppEventId }); } catch(e) {}
+        }
+      }
+    }
+    memos.splice(idx, 1);
+    await saveMemos();
+    render();
+    return true;
+  }
+
+  async function restoreMemo(recycleId) {
+    const idx = recycleBin.findIndex(r => r.id === recycleId);
+    if (idx === -1) return false;
+    const item = recycleBin[idx];
+    const memo = item.data;
+    memo.id = genId();
+    memos.push(memo);
+    memos.sort((a,b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    recycleBin.splice(idx, 1);
+    await saveMemos();
+    render();
+    return true;
+  }
+
+  async function toggleFav(id) { const m = memos.find(m => m.id === id); if (!m) return; m.favorite = !m.favorite; await saveMemos(); render(); }
+  async function toggleLock(id) { const m = memos.find(m => m.id === id); if (!m) return; m.locked = !m.locked; await saveMemos(); render(); showToast(m.locked ? '已锁定' : '已解锁'); }
+  async function toggleEncrypt(id) { 
+    const m = memos.find(m => m.id === id); 
+    if (!m) return; 
+    m.encrypted = !m.encrypted; 
+    // 如果关闭加密，清空开放列表
+    if (!m.encrypted) {
+      m.encryptedOpenTo = [];
+    }
+    await saveMemos(); 
+    render(); 
+    showToast(m.encrypted ? '已加密' : '已解密'); 
+  }
+
+  // ---- 识图辅助：取备忘录图片（最多4张，压缩到2MB内） ----
+  async function getMemoImagesForAI(memo) {
+    if (!memo || !memo.blocks || !memo.blocks.length) return [];
+    const imgRefs = memo.blocks.filter(b => b.type === 'image' && b.ref).slice(0, 4);
+    const out = [];
+    for (const b of imgRefs) {
+      try {
+        const r = await AiPhone.media.get({ ref: b.ref });
+        if (r && r.dataUrl) {
+          const small = await compressImage(r.dataUrl, 2000 * 1024);
+          out.push({ role: 'user', content: '（备忘录中的图片）', image: small });
+        }
+      } catch(e) {}
+    }
+    return out;
+  }
+
+  // ---- 记忆写入辅助函数 ----
+  let cachedUserName = null;
+  async function getUserDisplayName() {
+    if (cachedUserName) return cachedUserName;
+    try {
+      const profile = await AiPhone.user.getProfile();
+      if (profile?.name) { cachedUserName = profile.name; return profile.name; }
+    } catch(e) {}
+    return '用户';
+  }
+
+  async function writeCharacterMemory(characterId, title, content) {
+    if (!characterId) return;
+    try {
+      await AiPhone.memory.addTimeline({
+        characterId: characterId,
+        appLabel: '备忘录',
+        summary: title,
+        detail: content || '',
+        appEventId: 'memo_memory_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5)
+      });
+    } catch(e) {
+      logWarn('MEM_WRITE', '记忆写入失败', e.message);
+    }
+  }
+
+  // ============================================================
+  // 第四版：render 函数（含加密标签单击/长按新交互）
+  // ============================================================
+  function render() {
+    let filtered = currentTab === 'all' ? memos.slice() : memos.filter(m => m.favorite);
+
+    try {
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        filtered = filtered.filter(m => {
+          if (m.content.toLowerCase().includes(q)) return true;
+          if (m.replyData && m.replyData.replies) {
+            return m.replyData.replies.some(r => r.content.toLowerCase().includes(q));
+          }
+          return false;
+        });
+      }
+    } catch(e) {
+      showError('搜索异常', '搜索时发生错误：' + e.message);
+      logWarn('SEARCH', e.message);
+    }
+
+    filtered.sort((a,b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+    if (!filtered.length) {
+      memoList.innerHTML = `<div class="empty-state">${currentTab === 'all' ? '还没有备忘录，写一条吧' : '收藏列表为空'}</div>`;
+      return;
+    }
+
+    let html = '';
+    for (const memo of filtered) {
+      const type = memo.type || 'user';
+      const isSpecial = type === 'special', isReply = type === 'reply', isDaibi = type === 'daibi';
+      const isEnc = memo.encrypted === true;
+      const isFav = memo.favorite === true;
+      const isLocked = memo.locked === true;
+      const isUserMemo = type === 'user';
+
+      let cls = 'memo-card';
+      if (isSpecial || isReply) cls += ' special';
+      if (isDaibi) cls += ' daibi';
+      if (isLocked) cls += ' locked';
+
+      let badges = '';
+      if (isSpecial) badges += '<span class="badge badge-special">角色留言</span>';
+      if (isReply) badges += '<span class="badge badge-reply">角色回复</span>';
+      if (isDaibi) badges += '<span class="badge badge-daibi">角色代笔</span>';
+
+      let showUnknown = false;
+      if ((isSpecial || isReply) && memo.characterName && memo.source === 'random') {
+        showUnknown = true;
+        const key = memo.id + '_' + memo.characterName;
+        const rev = revealedMap[key] === true;
+        if (rev) {
+          badges = '<span class="badge badge-unknown revealed" style="cursor:default;">' + escHtml(memo.characterName) + '</span>' + badges;
+        } else {
+          badges = '<span class="badge badge-unknown" data-id="' + memo.id + '" data-char="' + escHtml(memo.characterName) + '" data-action="guess">未知</span>' + badges;
+        }
+      }
+
+      if (!showUnknown && (isSpecial || isDaibi) && memo.characterName && !memo._hideCharacterName && !isUserMemo) {
+        badges = '<span class="badge badge-daibi-name">' + escHtml(memo.characterName) + '</span>' + badges;
+      }
+
+      // 加密标签（新交互：单击切换，长按1秒弹窗）
+      const encClass = isEnc ? 'badge-encrypted' : 'badge-encrypted inactive';
+      badges += '<span class="badge ' + encClass + ' encrypt-toggle" data-id="' + memo.id + '">加密</span>';
+
+      const lockClass = isLocked ? 'badge-lock active' : 'badge-lock';
+      badges += '<span class="badge ' + lockClass + '" data-id="' + memo.id + '" data-action="toggleLock">锁定</span>';
+
+      let displayTitle = memo._title || '';
+      if (!displayTitle) {
+        const content = memo.content || '';
+        if (content.length <= 12) {
+          displayTitle = content;
+        } else {
+          const punctMatch = content.match(/^.{0,12}[。，、！？；：,;!?\n]/);
+          if (punctMatch) {
+            displayTitle = punctMatch[0].replace(/[。，、！？；：,;!?\n]$/, '');
+          } else {
+            displayTitle = content.slice(0, 12);
+          }
+        }
+      }
+
+      const fullContent = memo.content || '';
+      const isExp = expandState[memo.id] || false;
+      const isLong = fullContent.length > 20;
+      let displayContent = fullContent;
+      if (isLong && !isExp) {
+        displayContent = fullContent.slice(0, 20) + '…';
+      }
+      const contentCls = 'memo-content' + (isExp ? ' expanded' : '');
+
+      const hasReplies = memo.replyData && memo.replyData.replies && memo.replyData.replies.length > 0;
+
+      const hasHistory = memoEditHistory[memo.id] && memoEditHistory[memo.id].history.length > 1;
+      const histEntry = memoEditHistory[memo.id];
+      const canUndo = histEntry && histEntry.index > 0;
+      const canRedo = histEntry && histEntry.index < histEntry.history.length - 1;
+
+      html += '<div class="' + cls + '" data-id="' + memo.id + '">';
+      html += '  <div class="memo-header"><span class="memo-time">' + formatTime(memo.createdAt) + '</span><div class="memo-top-right">' + badges + '</div></div>';
+      html += '  <div class="memo-title">' + escHtml(displayTitle || '(无标题)') + '</div>';
+      let contentHtml = escHtml(fullContent);
+      contentHtml = contentHtml.replace(/\n/g, '<br>');
+      html += '  <div class="memo-content">' + contentHtml + '</div>';
+      const memoBlocks = (memo.blocks && Array.isArray(memo.blocks)) ? memo.blocks : null;
+      if (memoBlocks && memoBlocks.some(b => b.type === 'image')) {
+        const imgs = memoBlocks.filter(b => b.type === 'image');
+        html += '  <div class="memo-thumbs">';
+        for (const b of imgs) {
+          html += '    <div class="memo-thumb" data-ref="' + escHtml(b.ref || '') + '"><div class="thumb-placeholder">图片</div></div>';
+        }
+        html += '  </div>';
+      }
+      html += '  <div class="memo-bottom">';
+      html += '    <div class="memo-actions">';
+      html += '      <button class="btn btn-sm btn-danger delete-btn" data-id="' + memo.id + '">删除</button>';
+      html += '      <button class="btn btn-sm btn-outline share-btn" data-id="' + memo.id + '">分享</button>';
+      if (hasReplies) html += '      <button class="btn btn-sm btn-outline view-reply-btn active" data-id="' + memo.id + '">查看回复</button>';
+      else html += '      <button class="btn btn-sm btn-outline view-reply-btn" data-id="' + memo.id + '" style="color:#8aaac8;">查看回复</button>';
+      html += '    </div>';
+      html += '    <div style="display:flex;align-items:center;gap:2px;">';
+      html += '      <button class="edit-history-btn undo-btn" data-id="' + memo.id + '" style="font-size:14px;border:none;background:transparent;color:' + (canUndo ? '#2a4a6a' : '#b0c8e0') + ';cursor:' + (canUndo ? 'pointer' : 'default') + ';padding:0 2px;">◄</button>';
+      html += '      <button class="edit-history-btn redo-btn" data-id="' + memo.id + '" style="font-size:14px;border:none;background:transparent;color:' + (canRedo ? '#2a4a6a' : '#b0c8e0') + ';cursor:' + (canRedo ? 'pointer' : 'default') + ';padding:0 2px;">►</button>';
+      html += '      <button class="favorite-star ' + (isFav ? 'active' : '') + '" data-id="' + memo.id + '">' + (isFav ? '★' : '☆') + '</button>';
+      html += '    </div>';
+      html += '  </div>';
+
+      if (hasReplies && expandState[memo.id + '_reply']) {
+        html += '  <div class="reply-expand">';
+        const replies = memo.replyData.replies;
+        for (let i = 0; i < replies.length; i++) {
+          const r = replies[i];
+          const charName = r.characterName || memo.replyData.characterName || '未知';
+          html += '    <div class="reply-item">';
+          html += '      <div class="reply-body">';
+          html += '        <div class="reply-name">' + escHtml(charName) + ' <span class="reply-time">' + formatTime(r.createdAt) + '</span></div>';
+          html += '        <div class="reply-text">' + escHtml(r.content) + '</div>';
+          html += '      </div>';
+          html += '      <div class="reply-actions">';
+          html += '        <button class="btn btn-sm btn-outline reply-detail-btn" data-memo="' + memo.id + '" data-index="' + i + '">···</button>';
+          html += '      </div>';
+          html += '    </div>';
+        }
+        html += '  </div>';
+      }
+      html += '</div>';
+    }
+    memoList.innerHTML = html;
+
+    // ---- 事件绑定 ----
+    document.querySelectorAll('.favorite-star').forEach(el => el.addEventListener('click', () => toggleFav(el.dataset.id)));
+    document.querySelectorAll('[data-action="toggleLock"]').forEach(el => el.addEventListener('click', () => toggleLock(el.dataset.id)));
+
+    // 点击卡片（标题/内容/非功能按钮区域）进入全屏编辑
+    document.querySelectorAll('.memo-card').forEach(el => {
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('button') || e.target.closest('.badge') || e.target.closest('.favorite-star') || e.target.closest('.edit-history-btn')) return;
+        const id = el.dataset.id;
+        const memo = memos.find(m => m.id === id);
+        if (memo && memo.locked) { showToast('该备忘录已锁定，无法编辑'); return; }
+        openMiniEditor(id, false);
+      });
+    });
+
+    document.querySelectorAll('.delete-btn').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = el.dataset.id;
+        const memo = memos.find(m => m.id === id);
+        if (memo && memo.locked) { showToast('该备忘录已锁定，无法删除'); return; }
+        showConfirm('删除备忘录', '确定删除？将移入回收站', async (confirmed) => {
+          if (confirmed) { await deleteMemo(id, true); closeConfirm(); }
+          else closeConfirm();
+        }, true);
+      });
+    });
+
+    document.querySelectorAll('.share-btn').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openShareTarget(el.dataset.id);
+      });
+    });
+
+    document.querySelectorAll('.view-reply-btn').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleReplyExpand(el.dataset.id);
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggleExpand"]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = el.dataset.id;
+        expandState[id] = !expandState[id];
+        render();
+      });
+    });
+
+    document.querySelectorAll('[data-action="guess"]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openGuess(el.dataset.id, el.dataset.char);
+      });
+    });
+
+    document.querySelectorAll('.reply-detail-btn').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openReplyDetail(el.dataset.memo, parseInt(el.dataset.index));
+      });
+    });
+
+    document.querySelectorAll('.undo-btn').forEach(el => {
+      el.addEventListener('click', async (e) => {
+        if (el.disabled) return;
+        e.stopPropagation();
+        const id = el.dataset.id;
+        const result = undoEditHistory(id);
+        if (result) {
+          const memo = memos.find(m => m.id === id);
+          if (memo) {
+            memo._title = result.title;
+            memo.content = result.content;
+            // 优先恢复完整 blocks（含 author 标记，保留"来自xx"样式）；否则重算并保留图片块
+            if (result.blocks && Array.isArray(result.blocks)) {
+              memo.blocks = JSON.parse(JSON.stringify(result.blocks));
+            } else if (Array.isArray(memo.blocks) && memo.blocks.length) {
+              const imgBlocks = memo.blocks.filter(b => b.type === 'image');
+              memo.blocks = [...imgBlocks, ...roleTextToBlocks(result.content)];
+            }
+            await saveMemos();
+            render();
+            showToast('已回退');
+          }
+        }
+      });
+    });
+
+    document.querySelectorAll('.redo-btn').forEach(el => {
+      el.addEventListener('click', async (e) => {
+        if (el.disabled) return;
+        e.stopPropagation();
+        const id = el.dataset.id;
+        const result = redoEditHistory(id);
+        if (result) {
+          const memo = memos.find(m => m.id === id);
+          if (memo) {
+            memo._title = result.title;
+            memo.content = result.content;
+            // 优先恢复完整 blocks（含 author 标记，保留"来自xx"样式）；否则重算并保留图片块
+            if (result.blocks && Array.isArray(result.blocks)) {
+              memo.blocks = JSON.parse(JSON.stringify(result.blocks));
+            } else if (Array.isArray(memo.blocks) && memo.blocks.length) {
+              const imgBlocks = memo.blocks.filter(b => b.type === 'image');
+              memo.blocks = [...imgBlocks, ...roleTextToBlocks(result.content)];
+            }
+            await saveMemos();
+            render();
+            showToast('已重做');
+          }
+        }
+      });
+    });
+
+    // ---- 异步加载图片缩略图 ----
+    document.querySelectorAll('.memo-thumb[data-ref]').forEach(el => {
+      const ref = el.dataset.ref;
+      if (!ref) return;
+      AiPhone.media.get({ ref: ref }).then(img => {
+        if (img && img.dataUrl && el.isConnected) el.innerHTML = '<img src="' + img.dataUrl + '" alt="">';
+      }).catch(() => {});
+    });
+
+    // ---- 加密标签：单击切换加密，长按1秒打开开放范围设置 ----
+    document.querySelectorAll('.encrypt-toggle').forEach(el => {
+      const id = el.dataset.id;
+      let longPressTimer = null;
+      let isLongPress = false;
+
+      const startLongPress = (e) => {
+        isLongPress = false;
+        longPressTimer = setTimeout(() => {
+          isLongPress = true;
+          const memo = memos.find(m => m.id === id);
+          if (memo) {
+            openEncryptSettings(id);
+          }
+          longPressTimer = null;
+        }, 1000);
+      };
+      const endLongPress = () => {
+        if (longPressTimer) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+      };
+
+      el.addEventListener('click', (e) => {
+        if (isLongPress) {
+          isLongPress = false;
+          return;
+        }
+        toggleEncrypt(id);
+      });
+
+      el.addEventListener('mousedown', startLongPress);
+      el.addEventListener('mouseup', endLongPress);
+      el.addEventListener('mouseleave', endLongPress);
+      el.addEventListener('touchstart', startLongPress, { passive: true });
+      el.addEventListener('touchend', endLongPress, { passive: true });
+      el.addEventListener('touchcancel', endLongPress, { passive: true });
+    });
+  }
+
+  // ---- 其他功能函数 ----
+  function toggleReplyExpand(memoId) {
+    const memo = memos.find(m => m.id === memoId);
+    if (!memo) return;
+    if (!memo.replyData || !memo.replyData.replies || !memo.replyData.replies.length) {
+      const ov = document.createElement('div');
+      ov.className = 'modal-overlay topmost';
+      ov.innerHTML = `<div class="modal-box" style="text-align:center;"><h3 style="color:#6a8aaa;">暂无回复</h3><p style="margin:8px 0;font-size:14px;">您可以分享给角色生成回复</p><div class="modal-actions" style="justify-content:center;"><button class="btn btn-primary" onclick="this.closest('.modal-overlay').remove()">知道了</button></div></div>`;
+      document.body.appendChild(ov);
+      return;
+    }
+    const key = memoId + '_reply';
+    expandState[key] = !expandState[key];
+    render();
+  }
+
+  function openRecycleBin() {
+    if (!recycleBin || !recycleBin.length) {
+      showToast('回收站为空');
+      return;
+    }
+    const ov = document.createElement('div');
+    ov.className = 'modal-overlay topmost';
+    ov.innerHTML = `
+      <div class="modal-box">
+        <h3 style="display:flex;justify-content:space-between;align-items:center;">
+          <span>回收站</span>
+          <button class="btn btn-sm btn-danger" id="clearRecycle">清空</button>
+        </h3>
+        <p style="font-size:11px;color:#8aaac8;margin-bottom:8px;">最近 ${RECYCLE_LIMIT} 条</p>
+        <div class="recycle-list">
+          ${recycleBin.map(r => `
+            <div class="recycle-item" data-id="${r.id}">
+              <span class="recycle-content">${escHtml(r.data.content || '（空）')}</span>
+              <span class="recycle-time">${formatTime(r.deletedAt)}</span>
+              <div class="recycle-actions">
+                <button class="btn btn-sm btn-outline restore-btn" data-id="${r.id}">恢复</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" id="recycleClose">关闭</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(ov);
+
+    ov.querySelectorAll('.restore-btn').forEach(el => {
+      el.addEventListener('click', async () => {
+        const id = el.dataset.id;
+        const success = await restoreMemo(id);
+        if (success) {
+          showToast('已恢复');
+          ov.remove();
+          openRecycleBin();
+        } else {
+          showToast('恢复失败');
+        }
+      });
+    });
+
+    ov.querySelector('#clearRecycle').addEventListener('click', () => {
+      const clearOv = document.createElement('div');
+      clearOv.className = 'modal-overlay topmost';
+      clearOv.innerHTML = `
+        <div class="modal-box" style="text-align:center;">
+          <h3>⚠️ 确认清空</h3>
+          <p style="margin:12px 0;font-size:14px;color:#1a2a3a;">确定要清空回收站吗？删除的内容将无法恢复</p>
+          <div class="modal-actions" style="justify-content:center;">
+            <button class="btn btn-outline" id="clearNo">取消</button>
+            <button class="btn btn-danger" id="clearYes">确定</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(clearOv);
+      clearOv.querySelector('#clearNo').addEventListener('click', () => clearOv.remove());
+      clearOv.querySelector('#clearYes').addEventListener('click', async () => {
+        recycleBin = [];
+        await saveMemos();
+        clearOv.remove();
+        ov.remove();
+        showToast('已清空回收站');
+      });
+    });
+
+    ov.querySelector('#recycleClose').addEventListener('click', () => ov.remove());
+  }
+
+  async function openGuess(memoId, charName) {
+    try {
+      const chars = await AiPhone.characters.list();
+      if (!chars || !chars.length) { showToast('没有角色可供猜测'); return; }
+      const ov = document.createElement('div');
+      ov.className = 'modal-overlay topmost';
+      ov.innerHTML = `
+        <div class="modal-box">
+          <h3 style="margin-bottom:8px;">这是谁写的？</h3>
+          <p style="font-size:12px;color:#6a8aaa;margin-bottom:8px;">选择你认为的作者</p>
+          <div class="guess-list">
+            ${chars.map(c => `<button data-name="${escHtml(c.name||'未命名')}">${escHtml(c.name||'未命名')}</button>`).join('')}
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn-outline" id="guessCancel">取消</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(ov);
+      ov.querySelectorAll('.guess-list button').forEach(el => {
+        el.addEventListener('click', () => {
+          const guessed = el.dataset.name;
+          ov.remove();
+          if (guessed === charName) {
+            revealedMap[memoId + '_' + charName] = true;
+            saveMemos(); render(); showToast('回答正确！');
+            const co = document.createElement('div');
+            co.className = 'modal-overlay topmost';
+            co.innerHTML = `<div class="modal-box" style="text-align:center;"><h3 style="color:#2a9a6a;">✅ 回答正确</h3><p style="margin:8px 0;font-size:14px;">「${escHtml(charName)}」已揭晓</p><div class="modal-actions" style="justify-content:center;"><button class="btn btn-primary" onclick="this.closest('.modal-overlay').remove()">好的</button></div></div>`;
+            document.body.appendChild(co);
+          } else {
+            showToast('回答错误，再想想？');
+          }
+        });
+      });
+      ov.querySelector('#guessCancel').addEventListener('click', () => ov.remove());
+    } catch(e) { logWarn('GUESS', e.message); showToast('操作失败'); }
+  }
+
+  // ---- 全屏编辑：blocks 结构 + 撤销/重做栈 ----
+  let editBlocks = [];
+  let editUndoStack = [];
+  let editRedoStack = [];
+
+  function blocksToEditContent(blocks) {
+    if (!blocks || !blocks.length) return '';
+    return blocks.map(b => b.type === 'text' ? (b.text || '') : '[图片]').join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+
+  function contentToBlocks(content) {
+    if (!content || !content.trim()) return [];
+    const lines = content.split('\n');
+    const blocks = [];
+    let buf = '';
+    const flush = () => { if (buf !== '') { blocks.push({ type: 'text', text: buf }); } buf = ''; };
+    for (const line of lines) {
+      if (line.trim() === '[图片]') { flush(); blocks.push({ type: 'image', ref: '' }); }
+      else buf = buf ? buf + '\n' + line : line;
+    }
+    flush();
+    return blocks;
+  }
+
+  // 角色输出 → blocks：按 [新文本框] 分隔符拆成多个文本框（无分隔符=单个文本框）
+  function roleTextToBlocks(text) {
+    if (!text || !text.trim()) return [];
+    const blocks = [];
+    for (const part of String(text).split(/\[新文本框\]/)) {
+      const t = (part || '').trim();
+      if (t) blocks.push({ type: 'text', text: t });
+    }
+    return blocks;
+  }
+
+  // 用户话术 → blocks：把自然语言里的分隔指令（隔断/新建文本框/另起一段等）转成 [新文本框] 分隔符。
+  // 「新文本框」与「新建文本框」等价，都表示同一个分隔符；同时兼容「新起一段/再开一段/重新建文本框」等变体。
+  // 适用于"用户直接口述的内容"与"角色生成内容里携带的分隔意图"；角色工具输出请按 presets 提示直接写 [新文本框]。
+  function naturalToBlocks(text) {
+    if (!text) return '';
+    let t = String(text);
+    t = t.replace(/(新起(?:一段)?|再开(?:一段)?|另起(?:一段)?|新建(?:一个)?文本框|重新建(?:一个)?文本框|新开(?:一个)?文本框|另开(?:一个)?文本框|新文本框|新建文本框|隔断|隔开|分隔|分块|分框|分一下|再写一段|再记一段|换一段|换一块|另换一块)(?:一下|一截|开来|一些)?/g, '[新文本框]');
+    t = t.replace(/\[\s*新文本框\s*\]\s*[:：]?\s*/g, '[新文本框]');
+    return t;
+  }
+
+  // 把 memo 的 blocks 转成带结构标记的文本（供 AI 阅读/编辑），
+  // 文本框之间用 [新文本框] 分隔、图片用 [图片] 占位，角色据此知道结构、编辑时不丢框。
+  function blocksToStructuredText(blocks) {
+    if (!blocks || !Array.isArray(blocks) || !blocks.length) return '';
+    return blocks.map(b => {
+      if (b.type === 'text') return (b.text || '');
+      if (b.type === 'image') return '[图片]';
+      return '';
+    }).join('[新文本框]').replace(/(\[新文本框\]){2,}/g, '[新文本框]').trim();
+  }
+
+  // 取一条备忘录给 AI 看的内容：有 blocks 用结构化文本，否则用 content
+  function getMemoContentForAI(m) {
+    if (m && m.blocks && Array.isArray(m.blocks) && m.blocks.length) {
+      return blocksToStructuredText(m.blocks);
+    }
+    return (m && m.content) ? m.content : '';
+  }
+
+  // 把带结构标记的文本（[新文本框]/[图片]）解析回 blocks。
+  // 图片 ref 从 oldBlocks 中按出现顺序恢复（角色保留标记则图片原样保留，删掉标记则删图）。
+  // 文本块不继承 author（整段重写不带「来自xx」样式）。
+  function structuredToBlocks(text, oldBlocks) {
+    if (!text || !text.trim()) return [];
+    const imgRefs = (oldBlocks || []).filter(b => b.type === 'image').map(b => b.ref);
+    let imgIdx = 0;
+    const parts = String(text).split(/\[新文本框\]/);
+    const blocks = [];
+    for (const raw of parts) {
+      const part = (raw || '').trim();
+      if (!part) continue;
+      const segs = part.split(/\[图片\]/);
+      for (let i = 0; i < segs.length; i++) {
+        const s = (segs[i] || '').trim();
+        if (s) blocks.push({ type: 'text', text: s });
+        if (i < segs.length - 1) {
+          blocks.push({ type: 'image', ref: imgRefs[imgIdx] || '' });
+          imgIdx++;
+        }
+      }
+    }
+    return blocks;
+  }
+
+  function pushEditSnapshot() {
+    pushEditSnapshotWithTitle(miniEditTitle.value);
+  }
+
+  function pushEditSnapshotWithTitle(title) {
+    const snap = { title: title || '', blocks: JSON.parse(JSON.stringify(editBlocks)) };
+    const last = editUndoStack[editUndoStack.length - 1];
+    if (last && last.title === snap.title && JSON.stringify(last.blocks) === JSON.stringify(snap.blocks)) return;
+    editUndoStack.push(snap);
+    if (editUndoStack.length > 100) editUndoStack.shift();
+    editRedoStack = [];
+  }
+
+  function editUndo() {
+    if (!editUndoStack.length) return;
+    const cur = { title: miniEditTitle.value, blocks: JSON.parse(JSON.stringify(editBlocks)) };
+    const prev = editUndoStack.pop();
+    editRedoStack.push(cur);
+    miniEditTitle.value = prev.title;
+    editBlocks = prev.blocks || [];
+    renderBlocks(true);
+  }
+
+  function editRedo() {
+    if (!editRedoStack.length) return;
+    const cur = { title: miniEditTitle.value, blocks: JSON.parse(JSON.stringify(editBlocks)) };
+    const next = editRedoStack.pop();
+    editUndoStack.push(cur);
+    miniEditTitle.value = next.title;
+    editBlocks = next.blocks || [];
+    renderBlocks(true);
+  }
+
+  // 渲染：重建全新节点 + 焦点/光标恢复。
+  // iOS Safari 对"复用的 textarea 被程序化改 value / 容器被插入兄弟节点"会进入僵尸态
+  // （无法聚焦、聚焦后无法改已有内容），所以每次结构变化都用全新节点重建，
+  // 并在用户手势触发的渲染里恢复焦点与光标位置。
+  function renderBlocks(restoreFocus) {
+    // 记录当前焦点与光标
+    const active = document.activeElement;
+    let focusIdx = -1, selStart = -1, selEnd = -1;
+    if (active && active.tagName === 'TEXTAREA' && miniEditBlocks.contains(active)) {
+      focusIdx = parseInt(active.dataset.idx, 10);
+      try { selStart = active.selectionStart; selEnd = active.selectionEnd; } catch(e) {}
+    }
+
+    miniEditBlocks.innerHTML = '';
+    editBlocks.forEach((b, idx) => {
+      if (b.type === 'text') {
+        const ta = document.createElement('textarea');
+        ta.className = 'edit-block-text';
+        ta.placeholder = '写点什么...';
+        ta.value = b.text || '';
+        ta.dataset.idx = idx;
+        if (b.author) {
+          // 角色代写块：外层包一层特殊容器，顶部加"来自xx"小标签（不可编辑）
+          const wrap = document.createElement('div');
+          wrap.className = 'edit-block-text-wrap';
+          wrap.dataset.idx = idx;
+          const tag = document.createElement('div');
+          tag.className = 'edit-block-author';
+          tag.textContent = '来自 ' + (b.author || '角色');
+          wrap.appendChild(tag);
+          wrap.appendChild(ta);
+          miniEditBlocks.appendChild(wrap);
+        } else {
+          miniEditBlocks.appendChild(ta);
+        }
+      } else {
+        const wrap = document.createElement('div');
+        wrap.className = 'edit-block-image';
+        wrap.dataset.idx = idx;
+        const img = document.createElement('img');
+        img.alt = '';
+        img.draggable = false;
+        img.onload = () => { if (img.isConnected) img.parentElement.classList.add('loaded'); };
+        if (b.ref) {
+          const ref = b.ref;
+          AiPhone.media.get({ ref: ref }).then(r => { if (r && r.dataUrl && img.isConnected) img.src = r.dataUrl; }).catch(() => {});
+        }
+        wrap.appendChild(img);
+        miniEditBlocks.appendChild(wrap);
+      }
+    });
+
+    // 布局就绪后再统一计算高度：刚插入 DOM 时 scrollHeight 尚未刷新，
+    // 立即 autoGrow 会取到 0，导致长文本/图片显示成矮框
+    requestAnimationFrame(() => {
+      miniEditBlocks.querySelectorAll('textarea').forEach(ta => autoGrow(ta));
+    });
+    setTimeout(() => {
+      miniEditBlocks.querySelectorAll('textarea').forEach(ta => autoGrow(ta));
+    }, 60);
+
+    if (!editBlocks.length) {
+      const empty = document.createElement('div');
+      empty.className = 'edit-blocks-empty';
+      empty.textContent = '内容为空，点右下角 + 添加文本框或图片';
+      // 点击由容器事件委托统一处理（避免与委托重复触发）
+      miniEditBlocks.appendChild(empty);
+    }
+    updateEditCharCount();
+
+    // 恢复焦点与光标（默认开启；异步触发的渲染如添加图片请传 false）
+    if (restoreFocus !== false && focusIdx >= 0 && focusIdx < editBlocks.length && editBlocks[focusIdx].type === 'text') {
+      const node = miniEditBlocks.children[focusIdx];
+      const ta = node && node.tagName === 'TEXTAREA' ? node : (node ? node.querySelector('textarea') : null);
+      if (ta) {
+        ta.focus();
+        if (selStart >= 0) {
+          try { ta.setSelectionRange(selStart, selEnd >= 0 ? selEnd : selStart); } catch(e) {}
+        }
+      }
+    }
+  }
+
+  function updateEditCharCount() {
+    miniEditCharCount.textContent = blocksToEditContent(editBlocks).length;
+  }
+
+  function autoGrow(ta) {
+    ta.style.height = 'auto';
+    ta.style.height = (ta.scrollHeight + 2) + 'px';
+  }
+
+  // 长按 1 秒弹菜单（上移/下移/删除/查看详情）
+  const longPressArmed = new Set();
+  let blocksLongPressTimer = null;
+  let blocksLongPressEl = null;
+
+  // 事件委托到 blocks 容器：长按/点击/输入/右键统一处理。
+  // 长按策略：文本框的 touchstart 绝不拦截（保证聚焦编辑正常），
+  // 用「按住 ≥1 秒且未移动」判定长按；图片块才由 document 层拦截原生手势。
+  function setupBlocksDelegate() {
+    const container = miniEditBlocks;
+    let lpStartX = 0, lpStartY = 0, lpTimer = null, lpIdx = -1;
+
+    const cancelLp = () => { clearTimeout(lpTimer); lpTimer = null; lpIdx = -1; };
+
+    container.addEventListener('touchstart', (e) => {
+      const blockEl = e.target.closest('.edit-block-text, .edit-block-image, .edit-block-text-wrap');
+      if (!blockEl) return;
+      const t = e.touches[0];
+      lpStartX = t.clientX; lpStartY = t.clientY;
+      const idx = parseInt(blockEl.dataset.idx, 10);
+      lpIdx = isNaN(idx) ? -1 : idx;
+      clearTimeout(lpTimer);
+      lpTimer = setTimeout(() => { lpTimer = null; if (lpIdx >= 0) showBlockMenu(lpIdx); }, 1000);
+    }, { passive: true });
+
+    container.addEventListener('touchmove', (e) => {
+      if (lpTimer) {
+        const t = e.touches[0];
+        if (Math.abs(t.clientX - lpStartX) > 10 || Math.abs(t.clientY - lpStartY) > 10) cancelLp();
+      }
+    }, { passive: true });
+
+    container.addEventListener('touchend', cancelLp, { passive: true });
+    container.addEventListener('touchcancel', cancelLp, { passive: true });
+
+    // 鼠标长按（桌面调试用）
+    container.addEventListener('mousedown', (e) => {
+      const blockEl = e.target.closest('.edit-block-text, .edit-block-image, .edit-block-text-wrap');
+      if (!blockEl) return;
+      const idx = parseInt(blockEl.dataset.idx, 10);
+      if (isNaN(idx)) return;
+      clearTimeout(lpTimer);
+      lpTimer = setTimeout(() => { lpTimer = null; showBlockMenu(idx); }, 1000);
+    });
+    container.addEventListener('mouseup', cancelLp);
+    container.addEventListener('mouseleave', cancelLp);
+
+    container.addEventListener('click', (e) => {
+      const imgWrap = e.target.closest('.edit-block-image');
+      if (imgWrap) {
+        const idx = parseInt(imgWrap.dataset.idx, 10);
+        const b = editBlocks[idx];
+        if (b && b.type === 'image') openImageDetail(b.ref);
+        return;
+      }
+      if (e.target.closest('.edit-blocks-empty')) addTextBlock();
+    });
+
+    container.addEventListener('input', (e) => {
+      const ta = e.target.closest('textarea');
+      if (!ta) return;
+      const idx = parseInt(ta.dataset.idx, 10);
+      if (editBlocks[idx] && editBlocks[idx].type === 'text') {
+        pushEditSnapshot();               // 先记录操作前状态
+        editBlocks[idx].text = ta.value;
+        autoGrow(ta);
+        updateEditCharCount();
+      }
+    });
+
+    container.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target.tagName === 'TEXTAREA') e.stopPropagation();
+    });
+
+    container.addEventListener('contextmenu', (e) => {
+      if (e.target.closest('.edit-block-text, .edit-block-image')) e.preventDefault();
+    });
+  }
+
+  function showBlockMenu(idx) {
+    const old = document.querySelector('.block-menu');
+    if (old) old.remove();
+    const block = editBlocks[idx];
+    if (!block) return;
+    const menu = document.createElement('div');
+    menu.className = 'block-menu';
+    let html = '';
+    if (idx > 0) html += '<button data-act="up">上移</button>';
+    if (idx < editBlocks.length - 1) html += '<button data-act="down">下移</button>';
+    if (block.type === 'image') html += '<button data-act="view">查看详情</button>';
+    html += '<button data-act="del" style="color:#ff8a8a;">删除</button>';
+    menu.innerHTML = html;
+    document.body.appendChild(menu);
+    menu.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const act = btn.dataset.act;
+        menu.remove();
+        if (act === 'view') {
+          openImageDetail(block.ref);
+          return;
+        }
+        pushEditSnapshot();               // 先记录操作前状态
+        if (act === 'up' && idx > 0) {
+          const t = editBlocks[idx - 1]; editBlocks[idx - 1] = editBlocks[idx]; editBlocks[idx] = t;
+        } else if (act === 'down' && idx < editBlocks.length - 1) {
+          const t = editBlocks[idx + 1]; editBlocks[idx + 1] = editBlocks[idx]; editBlocks[idx] = t;
+        } else if (act === 'del') {
+          editBlocks.splice(idx, 1);
+        }
+        renderBlocks(false);
+      });
+    });
+    // 点击菜单外部（或触摸外部）关闭；touchend+click 双保险。
+    // 菜单弹出时手指可能还未离开屏幕，松手的 touchend 会在 350ms 保护期内被忽略，
+    // 避免"长按松手菜单立刻消失、点不到内容"。
+    const menuOpenedAt = Date.now();
+    const closeMenu = (e) => {
+      const t = e.target;
+      if (t && menu.contains(t)) return;
+      if (e.type === 'touchend' && Date.now() - menuOpenedAt < 500) return;
+      menu.remove();
+      document.removeEventListener('click', closeMenu);
+      document.removeEventListener('touchend', closeMenu);
+    };
+    setTimeout(() => {
+      document.addEventListener('click', closeMenu);
+      document.addEventListener('touchend', closeMenu);
+    }, 0);
+  }
+
+  // 图片详情：滚轮 + 双指缩放
+  function openImageDetail(ref) {
+    if (!ref) return;
+    const old = document.querySelector('.image-detail-overlay');
+    if (old) old.remove();
+    const ov = document.createElement('div');
+    ov.className = 'image-detail-overlay';
+    ov.innerHTML = '<div class="image-detail-box"><button class="image-detail-close">✕</button><div class="image-detail-stage"><img alt=""></div></div>';
+    document.body.appendChild(ov);
+    const img = ov.querySelector('img');
+    AiPhone.media.get({ ref: ref }).then(r => { if (r && r.dataUrl) img.src = r.dataUrl; }).catch(() => {});
+    ov.querySelector('.image-detail-close').addEventListener('click', () => ov.remove());
+    let scale = 1;
+    const stage = ov.querySelector('.image-detail-stage');
+    const apply = () => { img.style.transform = 'scale(' + scale + ')'; };
+    stage.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      scale = Math.min(5, Math.max(0.2, scale + (e.deltaY < 0 ? 0.15 : -0.15)));
+      apply();
+    }, { passive: false });
+    let pinchDist = 0;
+    stage.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) pinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    }, { passive: true });
+    stage.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2) {
+        const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        if (pinchDist > 0) { scale = Math.min(5, Math.max(0.2, scale * (d / pinchDist))); pinchDist = d; apply(); }
+      }
+    }, { passive: true });
+    stage.addEventListener('touchend', (e) => { if (e.touches.length < 2) pinchDist = 0; }, { passive: true });
+  }
+
+  // 添加文本框 / 图片
+  function addTextBlock() {
+    pushEditSnapshot();                   // 先记录操作前状态
+    editBlocks.push({ type: 'text', text: '' });
+    renderBlocks(false);
+    const areas = miniEditBlocks.querySelectorAll('textarea');
+    const last = areas[areas.length - 1];
+    if (last) last.focus();
+  }
+
+  // 添加图片：用隐藏 file input 选图（不依赖 media.pick 权限）
+  function addImageBlock() {
+    try { imageFileInput.click(); }
+    catch(e) { logWarn('ADD_IMG', e.message); showToast('添加图片失败'); }
+  }
+
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error || new Error('读取失败'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleImageFile(e) {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    try {
+      const dataUrl = await fileToDataUrl(f);
+      const small = await compressImage(dataUrl, 2000 * 1024);
+      const stored = await AiPhone.media.put({ dataUrl: small });
+      pushEditSnapshot();                   // 先记录操作前状态
+      editBlocks.push({ type: 'image', ref: stored.ref });
+      renderBlocks(false);
+      showToast('已添加图片', true);
+    } catch(err) { logWarn('ADD_IMG', err.message); showToast('添加图片失败'); }
+  }
+
+  function compressImage(dataUrl, maxBytes) {
+    return new Promise((resolve) => {
+      try {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            let w = img.width, h = img.height;
+            const maxSide = 1600;
+            if (w > maxSide || h > maxSide) {
+              if (w >= h) { h = Math.round(h * maxSide / w); w = maxSide; }
+              else { w = Math.round(w * maxSide / h); h = maxSide; }
+            }
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            let q = 0.85;
+            let out = canvas.toDataURL('image/jpeg', q);
+            while (out.length > maxBytes && q > 0.3) { q -= 0.15; out = canvas.toDataURL('image/jpeg', q); }
+            resolve(out);
+          } catch(e) { resolve(dataUrl); }
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      } catch(e) { resolve(dataUrl); }
+    });
+  }
+
+  function openMiniEditor(memoId, isNew = false) {
+    const memo = memoId ? memos.find(m => m.id === memoId) : null;
+    miniEditorState.isOpen = true;
+    miniEditorState.memoId = memoId;
+    miniEditorState.isNew = isNew;
+    miniEditorState.title = memo ? (memo._title || '') : '';
+    if (memo && memo.blocks && memo.blocks.length) {
+      editBlocks = JSON.parse(JSON.stringify(memo.blocks));
+    } else {
+      editBlocks = contentToBlocks(memo ? (memo.content || '') : '');
+    }
+    miniEditTitle.value = miniEditorState.title;
+    editUndoStack = [];
+    editRedoStack = [];
+    miniEditorOverlay.classList.remove('hidden');
+    renderBlocks(false);
+    setTimeout(() => {
+      const first = miniEditBlocks.querySelector('textarea');
+      if (first) first.focus();
+    }, 100);
+  }
+
+  function closeMiniEditor() {
+    miniEditorOverlay.classList.add('hidden');
+    miniEditorState.isOpen = false;
+    clearDraft();
+  }
+
+  // ---- 草稿自动保存（页面隐藏时存，返回确认后清） ----
+  async function saveDraftToStorage() {
+    try {
+      const draft = {
+        memoId: miniEditorState.memoId || null,
+        isNew: miniEditorState.isNew || false,
+        title: miniEditTitle.value,
+        blocks: JSON.parse(JSON.stringify(editBlocks))
+      };
+      const cfg = await AiPhone.db.list('config', { limit: 30 });
+      const item = cfg.find(c => c.id === 'memoDraft');
+      if (item) await AiPhone.db.update('config', 'memoDraft', { id: 'memoDraft', data: draft });
+      else await AiPhone.db.create('config', { id: 'memoDraft', data: draft });
+    } catch(e) { logWarn('DRAFT_SAVE', e.message); }
+  }
+
+  async function clearDraft() {
+    try {
+      const cfg = await AiPhone.db.list('config', { limit: 30 });
+      const item = cfg.find(c => c.id === 'memoDraft');
+      if (item) await AiPhone.db.delete('config', item.id);
+    } catch(e) { logWarn('DRAFT_CLEAR', e.message); }
+  }
+
+  async function restoreDraft() {
+    try {
+      const cfg = await AiPhone.db.list('config', { limit: 30 });
+      const item = cfg.find(c => c.id === 'memoDraft');
+      if (!item || !item.data) return;
+      const d = item.data;
+      if (d.title === undefined && !d.blocks) return;
+      miniEditorState.isOpen = true;
+      miniEditorState.memoId = d.memoId || null;
+      miniEditorState.isNew = !!d.isNew;
+      miniEditorState.title = d.title || '';
+      if (d.blocks && d.blocks.length) editBlocks = JSON.parse(JSON.stringify(d.blocks));
+      else editBlocks = contentToBlocks(d.content || '');
+      miniEditTitle.value = miniEditorState.title;
+      editUndoStack = [];
+      editRedoStack = [];
+      miniEditorOverlay.classList.remove('hidden');
+      renderBlocks(false);
+      showToast('已恢复上次未完成的编辑', true);
+    } catch(e) { logWarn('DRAFT_RESTORE', e.message); }
+  }
+
+  async function saveMiniEditor() {
+    const title = miniEditTitle.value.trim();
+    const hasText = editBlocks.some(b => b.type === 'text' && (b.text || '').trim());
+    const hasImage = editBlocks.some(b => b.type === 'image');
+    const content = blocksToEditContent(editBlocks);
+    const blocks = JSON.parse(JSON.stringify(editBlocks));
+
+    if (!title && !hasText && !hasImage) {
+      // 空内容：新建不创建；已有则直接删除（不进回收站）
+      if (miniEditorState.isNew) {
+        closeMiniEditor();
+        return;
+      }
+      const memo = memos.find(m => m.id === miniEditorState.memoId);
+      if (memo) {
+        if (memo.locked) { showToast('该备忘录已锁定，无法编辑'); return; }
+        await deleteMemo(memo.id, false);
+        closeMiniEditor();
+        render();
+        showToast('内容为空，已删除该备忘录');
+      } else {
+        closeMiniEditor();
+      }
+      return;
+    }
+
+    if (miniEditorState.isNew) {
+      const memo = await addMemo(content, false, null, 'user', { _title: title, blocks: blocks });
+      if (memo) {
+        closeMiniEditor();
+        render();
+        if (!memo.encrypted) {
+          await triggerCurious(getMemoContentForAI(memo), memo.id, 'curious');
+        }
+      }
+    } else if (miniEditorState.memoId) {
+      const memo = memos.find(m => m.id === miniEditorState.memoId);
+      if (memo) {
+        if (memo.locked) { showToast('该备忘录已锁定，无法编辑'); return; }
+        memo.content = content;
+        memo._title = title;
+        memo.blocks = blocks;
+        await saveMemos();
+        closeMiniEditor();
+        render();
+      }
+    }
+  }
+
+  // 返回：确认保存并清除编辑记录
+  function confirmBackFromEditor() {
+    showConfirm('保存并返回', '即将保存内容，清除编辑记录', (confirmed) => {
+      if (confirmed) {
+        editUndoStack = [];
+        editRedoStack = [];
+        saveMiniEditor();
+      }
+      closeConfirm();
+    }, true);
+  }
+
+  function openImport() { importModal.classList.remove('hidden'); }
+  function triggerBatch() { fileInput.click(); }
+
+  // ---- 剪贴板复制（带兜底） ----
+  function fallbackCopy(text) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch(e) { return false; }
+  }
+  function copyTextToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(() => true).catch(() => fallbackCopy(text));
+    }
+    return Promise.resolve(fallbackCopy(text));
+  }
+
+  // ---- 获得 json 格式（字段模板，复制到剪贴板） ----
+  function getJsonTemplateText() {
+    return JSON.stringify([
+      {
+        content: '示例备忘录内容',
+        blocks: [
+          { type: 'text', text: '示例备忘录内容' },
+          { type: 'image', ref: 'media-store://本机图片引用（仅本机恢复可用，可省略）', dataUrl: 'data:image/jpeg;base64,图片的base64数据（跨设备/发给他人导入请填此项）' }
+        ],
+        type: 'user',
+        encrypted: false,
+        favorite: false,
+        locked: false,
+        createdAt: '2026-01-01T10:00:00.000Z',
+        characterId: null,
+        characterName: null,
+        encryptedOpenTo: [],
+        replyData: {
+          characterId: '角色ID',
+          characterName: '角色名',
+          replies: [
+            {
+              content: '示例回复内容',
+              createdAt: '2026-01-01T10:05:00.000Z',
+              isConfirmed: false,
+              source: 'invite',
+              characterName: '角色名',
+              characterId: '角色ID'
+            }
+          ]
+        }
+      }
+    ], null, 2);
+  }
+  async function copyJsonTemplate() {
+    const text = getJsonTemplateText();
+    const ok = await copyTextToClipboard(text);
+    if (ok) {
+      showToast('模板已复制；图片跨设备请填 dataUrl(base64)，仅本机可用 ref', true);
+    } else {
+      const ov = document.createElement('div');
+      ov.className = 'modal-overlay topmost';
+      ov.innerHTML = `<div class="modal-box"><h3>JSON 模板</h3><p style="font-size:12px;color:#6a8aaa;margin-bottom:8px;">自动复制失败，请长按选中下方文本手动复制：</p><textarea style="width:100%;min-height:220px;padding:8px;border:1px solid #d0dff0;border-radius:8px;font-size:12px;font-family:monospace;box-sizing:border-box;" readonly>${escHtml(text)}</textarea><div class="modal-actions" style="justify-content:center;margin-top:10px;"><button class="btn btn-primary" onclick="this.closest('.modal-overlay').remove()">关闭</button></div></div>`;
+      document.body.appendChild(ov);
+    }
+  }
+  async function handleFile(e) {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const txt = await f.text();
+      const data = JSON.parse(txt);
+      let arr = Array.isArray(data) ? data : (Array.isArray(data.memos) ? data.memos : null);
+      if (!arr) { showToast('格式错误：应为备忘录 JSON 数组或导出文件'); return; }
+      let ok = 0, skip = 0;
+      for (const item of arr) {
+        const c = item.content || '';
+        if (!c.trim()) { skip++; continue; }
+        let ct = item.createdAt || null;
+        if (ct) { const d = new Date(ct); if (isNaN(d.getTime())) ct = null; }
+        const extra = {};
+        if (item._title) extra._title = item._title;
+        if (item.blocks) {
+          // 图片块：优先用 dataUrl（base64，跨设备导入）转存进媒体库；
+          // 只有 ref（本机/同库）则保留原引用；两者都没有则转成文字占位
+          extra.blocks = await Promise.all((item.blocks || []).map(async (b) => {
+            if (b && b.type === 'image') {
+              if (b.dataUrl) {
+                try {
+                  const stored = await AiPhone.media.put({ dataUrl: b.dataUrl });
+                  return { type: 'image', ref: stored.ref };
+                } catch(e) { return { type: 'text', text: '[图片]' }; }
+              } else if (b.ref) {
+                return { type: 'image', ref: b.ref };
+              }
+              return { type: 'text', text: '[图片]' };
+            }
+            return { ...(b || {}) };
+          }));
+        }
+        if (item.characterId) extra.characterId = item.characterId;
+        if (item.characterName) extra.characterName = item.characterName;
+        if (item.encryptedOpenTo) extra.encryptedOpenTo = item.encryptedOpenTo;
+        if (item.replyData) extra.replyData = item.replyData;
+        const memo = await addMemo(c, item.encrypted === true, ct, item.type || 'user', extra);
+        if (memo) {
+          memo.favorite = item.favorite === true;
+          memo.locked = item.locked === true;
+          await saveMemos();
+          ok++;
+        }
+      }
+      render();
+      showToast('导入完成：' + ok + ' 条' + (skip ? '，' + skip + ' 条跳过' : ''), true);
+    } catch(e) { showError('批量导入失败', e.message); }
+    fileInput.value = '';
+  }
+
+  // ---- 导出：直接下载 JSON（可选内嵌图片 base64，跨设备/跨实例可用；失败时兜底展示文本） ----
+  async function buildExportText(includeImages) {
+    const clone = JSON.parse(JSON.stringify(memos));
+    for (const m of clone) {
+      if (m.blocks && Array.isArray(m.blocks)) {
+        const newBlocks = [];
+        for (const b of m.blocks) {
+          if (b.type === 'image') {
+            if (includeImages && b.ref) {
+              let dataUrl = null;
+              try {
+                const r = await AiPhone.media.get({ ref: b.ref });
+                if (r && r.dataUrl) dataUrl = r.dataUrl;
+              } catch(e) {}
+              newBlocks.push({ type: 'image', ref: b.ref, dataUrl: dataUrl });
+            } else {
+              // 不导出图片时转为文字占位，避免导入端出现失效引用
+              newBlocks.push({ type: 'text', text: '[图片]' });
+            }
+          } else {
+            newBlocks.push(JSON.parse(JSON.stringify(b)));
+          }
+        }
+        m.blocks = newBlocks;
+      }
+    }
+    return JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), memos: clone }, null, 2);
+  }
+  async function batchExport() {
+    try {
+      const includeImages = $('exportIncludeImages') ? $('exportIncludeImages').checked : true;
+      const text = await buildExportText(includeImages);
+      const fileName = '备忘录导出_' + todayStr() + '.json';
+      let blobUrl = null;
+      try {
+        const blob = new Blob([text], { type: 'application/json' });
+        blobUrl = URL.createObjectURL(blob);
+      } catch(e) { logWarn('EXPORT_BLOB', e.message); }
+
+      const ov = document.createElement('div');
+      ov.className = 'modal-overlay topmost';
+      ov.innerHTML = `<div class="modal-box"><h3>导出完成</h3><p style="font-size:13px;color:#3a5a7a;margin:8px 0;">已生成 ${memos.length} 条备忘录的导出文件：<br><b>${escHtml(fileName)}</b></p><p style="font-size:12px;color:#6a8aaa;margin-bottom:10px;">如果浏览器没有自动弹出下载，请点击「下载文件」按钮；仍不行就用「复制内容」保存为 .json 文件。</p><div class="modal-actions" style="justify-content:center;flex-wrap:wrap;gap:8px;">${blobUrl ? '<button class="btn btn-primary" id="exportDownloadBtn">下载文件</button>' : ''}<button class="btn btn-outline" id="exportCopyBtn2">复制内容</button><button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">关闭</button></div></div>`;
+      document.body.appendChild(ov);
+
+      const dl = ov.querySelector('#exportDownloadBtn');
+      if (dl && blobUrl) {
+        dl.addEventListener('click', () => {
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => { try { URL.revokeObjectURL(blobUrl); } catch(e){} }, 3000);
+        });
+        // 自动尝试一次：若被沙盒拦截也不报错，用户可点上方按钮或复制
+        const auto = document.createElement('a');
+        auto.href = blobUrl;
+        auto.download = fileName;
+        document.body.appendChild(auto);
+        auto.click();
+        document.body.removeChild(auto);
+      }
+
+      const cp = ov.querySelector('#exportCopyBtn2');
+      if (cp) cp.addEventListener('click', async () => {
+        const ok = await copyTextToClipboard(text);
+        showToast(ok ? '已复制，可粘贴保存为 .json 文件' : '复制失败，请手动选择复制', true);
+      });
+
+      showToast('已生成 ' + memos.length + ' 条备忘录的导出文件', true);
+    } catch(e) {
+      logWarn('EXPORT', e.message);
+      showToast('导出失败：' + e.message, true);
+    }
+  }
+
+  // ---- 分享 ----
+  function openShareTarget(memoId) {
+    const memo = memos.find(m => m.id === memoId);
+    if (!memo) { showToast('未找到记录'); return; }
+    const typeOv = document.createElement('div');
+    typeOv.className = 'modal-overlay topmost';
+    typeOv.innerHTML = `
+      <div class="modal-box" style="text-align:center;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h3 style="margin:0;">请选择分享类型</h3>
+          <button style="background:none;border:none;font-size:20px;color:#6a8aaa;cursor:pointer;" id="shareTypeClose">✕</button>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:center;">
+          <button class="btn btn-primary" id="shareTypeProtect">保护角色身份</button>
+          <button class="btn btn-outline" id="shareTypeExpose">暴露角色身份</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(typeOv);
+    typeOv.querySelector('#shareTypeClose').addEventListener('click', () => typeOv.remove());
+    typeOv.querySelector('#shareTypeProtect').addEventListener('click', () => {
+      typeOv.remove();
+      openShareTargetList(memoId, 'protect');
+    });
+    typeOv.querySelector('#shareTypeExpose').addEventListener('click', () => {
+      typeOv.remove();
+      openShareTargetList(memoId, 'expose');
+    });
+  }
+
+  function openShareTargetList(memoId, mode) {
+    const memo = memos.find(m => m.id === memoId);
+    if (!memo) { showToast('未找到记录'); return; }
+    const ov = document.createElement('div');
+    ov.className = 'modal-overlay topmost';
+    ov.innerHTML = `<div class="modal-box"><h3>选择分享对象</h3><div class="share-target-list" id="shareTargetList"><div style="text-align:center;color:#8aaac8;padding:12px;">加载角色中...</div></div><div class="modal-actions"><button class="btn btn-outline" id="shareCancel">取消</button></div></div>`;
+    document.body.appendChild(ov);
+
+    AiPhone.characters.list().then(chars => {
+      const list = ov.querySelector('#shareTargetList');
+      if (!chars || chars.length === 0) {
+        list.innerHTML = '<div style="text-align:center;color:#8aaac8;padding:12px;">没有好友</div>';
+        return;
+      }
+      list.innerHTML = chars.map(c => `<button data-id="${c.id}" data-name="${escHtml(c.name||'未命名')}">${escHtml(c.name||'未命名')}</button>`).join('');
+      list.querySelectorAll('button').forEach(el => {
+        el.addEventListener('click', async () => {
+          const id = el.dataset.id;
+          const name = el.dataset.name;
+          ov.remove();
+          const target = { id: id, name: name };
+          await sendShareCardWithMode(memo, target, mode);
+        });
+      });
+    }).catch(e => {
+      ov.querySelector('#shareTargetList').innerHTML = '<div style="text-align:center;color:red;padding:12px;">加载失败</div>';
+      logWarn('SHARE', '获取角色列表失败', e.message);
+    });
+
+    ov.querySelector('#shareCancel').addEventListener('click', () => ov.remove());
+  }
+
+  async function sendShareCardWithMode(memo, target, mode) {
+    try {
+      const type = memo.type || 'user';
+      let typeLabel = '备忘录';
+      if (type === 'special') typeLabel = '角色留言';
+      else if (type === 'reply') typeLabel = '角色回复';
+      else if (type === 'daibi') typeLabel = '角色代笔';
+      else typeLabel = '备忘录';
+
+      const userProfile = await AiPhone.user.getProfile();
+      const userName = userProfile?.name || '用户';
+
+      let shareText = '';
+      const timeText = formatTime(memo.createdAt);
+      shareText += `时间：${timeText}\n`;
+      shareText += `分享备忘录ID：${memo.id}\n`;
+      shareText += `类型：${typeLabel}\n`;
+
+      const memoCharName = memo.characterName || '';
+      const isSelf = memoCharName === userName || (memo.characterId && memo.characterId === target.id);
+
+      if (mode === 'expose') {
+        const authorDisplay = memoCharName || '用户';
+        shareText += `作者：${authorDisplay}：${getMemoContentForAI(memo)}\n`;
+      } else {
+        let displayName = '';
+        if (memoCharName === userName) {
+          displayName = userName;
+        } else {
+          const isOwner = memo.characterId && memo.characterId === target.id;
+          if (isOwner) {
+            displayName = memoCharName || '用户';
+          } else {
+            displayName = '未知';
+          }
+        }
+        shareText += `作者：${displayName}：${getMemoContentForAI(memo)}\n`;
+      }
+
+      if (memo.replyData && memo.replyData.replies && memo.replyData.replies.length > 0) {
+        shareText += '挂载回复\n';
+        for (const r of memo.replyData.replies) {
+          const rCharName = r.characterName || '未知';
+          let rDisplayName = '';
+          if (mode === 'expose') {
+            rDisplayName = rCharName;
+          } else {
+            const rIsSelf = r.characterId && r.characterId === target.id;
+            if (rIsSelf) {
+              rDisplayName = rCharName;
+            } else {
+              rDisplayName = '未知';
+            }
+          }
+          shareText += `作者：${rDisplayName}：${r.content || ''}\n`;
+        }
+      } else {
+        shareText += '挂载回复\n暂无\n';
+      }
+
+      await AiPhone.chat.sendCard({
+        characterId: target.id,
+        role: 'user',
+        summary: '分享了一条' + typeLabel,
+        historyText: shareText,
+        card: {
+          title: '分享' + typeLabel,
+          body: memo.content || '',
+          subtitle: timeText,
+          accentColor: '#2a6ac8'
+        }
+      });
+
+      const jump = document.createElement('div');
+      jump.className = 'modal-overlay topmost';
+      jump.innerHTML = `
+        <div class="modal-box" style="text-align:center;">
+          <h3 style="color:#2a9a6a;">已发送</h3>
+          <p style="margin:8px 0;font-size:14px;">已分享给 ${escHtml(target.name)}</p>
+          <p style="font-size:12px;color:#6a8aaa;margin-bottom:10px;">是否跳转到聊天界面？</p>
+          <div class="modal-actions" style="justify-content:center;">
+            <button class="btn btn-outline" id="jumpNo">否</button>
+            <button class="btn btn-primary" id="jumpYes">是</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(jump);
+      jump.querySelector('#jumpNo').addEventListener('click', () => jump.remove());
+      jump.querySelector('#jumpYes').addEventListener('click', async () => {
+        jump.remove();
+        try {
+          await AiPhone.chat.openConversation({ characterId: target.id });
+        } catch(e) {
+          showToast('跳转失败，请手动打开聊天');
+        }
+      });
+    } catch(e) {
+      logWarn('SEND_SHARE', e.message);
+      showToast('分享失败');
+    }
+  }
+
+  // ---- 每日首次打开生成（含记忆写入） ----
+  async function tryTriggerDailySpecial() {
+    const today = todayStr();
+    if (today !== lastSpecialDate) {
+      specialTriggerToday = 0;
+      lastSpecialDate = today;
+      await saveSpecialCounter();
+    }
+    if (today !== lastReplyDate) {
+      replyTriggerToday = 0;
+      lastReplyDate = today;
+      await saveReplyCounter();
+    }
+    let generated = 0;
+    // 角色留言：仅在启用开关打开且今日未生成满条数时执行
+    if (dev.special && dev.specialCount > 0 && specialTriggerToday < dev.specialCount) {
+      for (let i = specialTriggerToday; i < dev.specialCount; i++) {
+      const ch = await pickRandomChar(dev.specialChars);
+      if (!ch) break;
+      {
+        const now = new Date();
+        const t = now;
+        const h = t.getHours();
+        let timeDesc = '';
+        if (h >= 5 && h < 8) timeDesc = '清晨，天刚亮';
+        else if (h >= 8 && h < 12) timeDesc = '上午';
+        else if (h >= 12 && h < 14) timeDesc = '中午';
+        else if (h >= 14 && h < 18) timeDesc = '下午';
+        else if (h >= 18 && h < 22) timeDesc = '晚上';
+        else if (h >= 22) timeDesc = '深夜，该休息了';
+        else timeDesc = '凌晨，大多数人已入睡';
+        const types = ['暗示求发消息', '日常分享', '单纯问好'];
+        const type = types[Math.floor(Math.random() * types.length)];
+        const result = await AiPhone.ai.generate({
+          characterId: ch.id,
+          appTags: ['memo', 'special'],
+          instruction: `当前时间：${h}点（${timeDesc}）。请生成一句与当前时间段匹配的角色留言，深夜/凌晨时段不要问候"早上好""醒了没"，应表达夜深或关心休息。随机类型: ${type}\n关系状态: 正常\n尽量简短（50字以内），只输出一句留言，不要有多余内容。`
+        });
+        let content = result.text || (h >= 22 || h < 5 ? '这么晚了，还没睡吗？' : (h >= 5 && h < 12 ? '早上好呀' : (h >= 12 && h < 18 ? '下午好' : '晚上好')));
+        content = cleanAI(content);
+        if (!content) content = (h >= 22 || h < 5) ? '这么晚了，早点休息呀。' : '今天天气不错。';
+        const memo = await addMemo(content, false, t.toISOString(), 'special', {
+          characterName: ch.name || '角色',
+          source: 'random',
+          characterId: ch.id,
+          blocks: roleTextToBlocks(content)
+        });
+        if (memo) {
+          // 写入记忆
+          const uName = await getUserDisplayName();
+          await writeCharacterMemory(ch.id, '曾在' + uName + '的备忘录中写入留言', '备忘录id：' + memo.id + '，留言内容：' + content);
+        }
+        specialTriggerToday++;
+        generated++;
+      }
+      }
+      await saveSpecialCounter();
+    }
+
+    // 角色回复：仅在启用开关打开且今日未生成满条数时执行
+    if (dev.reply && dev.replyCount > 0 && replyTriggerToday < dev.replyCount) {
+      const candidates = memos.filter(m => m.type === 'user' && !m.encrypted);
+      if (candidates.length) {
+      for (let i = replyTriggerToday; i < dev.replyCount; i++) {
+      const ch = await pickRandomChar(dev.replyChars);
+      if (!ch) break;
+      {
+        const target = candidates[Math.floor(Math.random() * candidates.length)];
+        const result = await AiPhone.ai.generate({
+          characterId: ch.id,
+          appTags: ['memo', 'special'],
+          instruction: '用户备忘录内容: ' + getMemoContentForAI(target) + '\n请生成一句角色回复，要求与备忘录内容相关。尽量简短（50字以内），只输出一句回复，不要有多余内容。'
+        });
+        let content = result.text || '好的，我看看。';
+        content = cleanAI(content);
+        if (!content) content = '好的，我看看。';
+        if (!target.replyData) target.replyData = { characterId: ch.id, characterName: ch.name || '角色', replies: [] };
+        const entry = {
+          content: content,
+          createdAt: new Date().toISOString(),
+          isConfirmed: false,
+          source: 'random',
+          memoryAppEventId: null,
+          characterName: ch.name || '角色',
+          characterId: ch.id
+        };
+        target.replyData.replies.push(entry);
+        await saveMemos();
+        // 写入记忆
+        const uName = await getUserDisplayName();
+        await writeCharacterMemory(ch.id, '曾在' + uName + '的备忘录[' + target.id + ']中写入回复', '回复内容：' + content);
+        replyTriggerToday++;
+        generated++;
+        }
+      }
+      await saveReplyCounter();
+      }
+    }
+
+    if (generated > 0) {
+      showToast('📬 你收到了新的消息');
+      render();
+    }
+  }
+
+  // ---- 生成功能（开发者模式，含记忆写入） ----
+  async function genSpecial(count) {
+    if (!dev.special) { showToast('角色留言功能未启用'); return 0; }
+    let n = 0;
+    for (let i = 0; i < count; i++) {
+      const ch = await pickRandomChar(dev.specialChars);
+      if (!ch) { showToast('没有可用的角色'); break; }
+      const now = new Date();
+      const t = now;
+      const h = t.getHours();
+      let timeDesc = '';
+      if (h >= 5 && h < 8) timeDesc = '清晨，天刚亮';
+      else if (h >= 8 && h < 12) timeDesc = '上午';
+      else if (h >= 12 && h < 14) timeDesc = '中午';
+      else if (h >= 14 && h < 18) timeDesc = '下午';
+      else if (h >= 18 && h < 22) timeDesc = '晚上';
+      else if (h >= 22) timeDesc = '深夜，该休息了';
+      else timeDesc = '凌晨，大多数人已入睡';
+      const types = ['暗示求发消息', '日常分享', '单纯问好'];
+      const type = types[Math.floor(Math.random() * types.length)];
+      const result = await AiPhone.ai.generate({
+        characterId: ch.id,
+        appTags: ['memo', 'special'],
+        instruction: `当前时间：${h}点（${timeDesc}）。请生成一句与当前时间段匹配的角色留言，深夜/凌晨时段不要问候"早上好""醒了没"，应表达夜深或关心休息。随机类型: ${type}\n关系状态: 正常\n尽量简短（50字以内），只输出一句留言，不要有多余内容。`
+      });
+      let content = result.text || (h >= 22 || h < 5 ? '这么晚了，还没睡吗？' : (h >= 5 && h < 12 ? '早上好呀' : (h >= 12 && h < 18 ? '下午好' : '晚上好')));
+      content = cleanAI(content);
+      if (!content) content = (h >= 22 || h < 5) ? '这么晚了，早点休息呀。' : '今天天气不错。';
+      const memo = await addMemo(content, false, t.toISOString(), 'special', {
+        characterName: ch.name || '角色',
+        source: 'random',
+        characterId: ch.id,
+        blocks: roleTextToBlocks(content)
+      });
+      if (memo) {
+        const uName = await getUserDisplayName();
+        await writeCharacterMemory(ch.id, '曾在' + uName + '的备忘录中写入留言', '备忘录id：' + memo.id + '，留言内容：' + content);
+      }
+      n++;
+    }
+    return n;
+  }
+
+  async function genReply(count) {
+    if (!dev.reply) { showToast('角色回复功能未启用'); return 0; }
+    const candidates = memos.filter(m => m.type === 'user' && !m.encrypted);
+    if (!candidates.length) { showToast('没有可回复的备忘录'); return 0; }
+    let n = 0;
+    for (let i = 0; i < count; i++) {
+      const target = candidates[Math.floor(Math.random() * candidates.length)];
+      const ch = await pickRandomChar(dev.replyChars);
+      if (!ch) { showToast('没有可用的角色'); break; }
+      const result = await AiPhone.ai.generate({
+        characterId: ch.id,
+        appTags: ['memo', 'special'],
+        instruction: '用户备忘录内容: ' + getMemoContentForAI(target) + '\n请生成一句角色回复，要求与备忘录内容相关。尽量简短（50字以内），只输出一句回复，不要有多余内容。'
+      });
+      let content = result.text || '好的，我看看。';
+      content = cleanAI(content);
+      if (!content) content = '好的，我看看。';
+      if (!target.replyData) target.replyData = { characterId: ch.id, characterName: ch.name || '角色', replies: [] };
+      const entry = {
+        content: content,
+        createdAt: new Date().toISOString(),
+        isConfirmed: false,
+        source: 'random',
+        memoryAppEventId: null,
+        characterName: ch.name || '角色',
+        characterId: ch.id
+      };
+      target.replyData.replies.push(entry);
+      await saveMemos();
+      const uName = await getUserDisplayName();
+      await writeCharacterMemory(ch.id, '曾在' + uName + '的备忘录[' + target.id + ']中写入回复', '回复内容：' + content);
+      n++;
+    }
+    render();
+    return n;
+  }
+
+  function showGenNotification() {
+    showToast('📬 你收到了新的消息');
+  }
+
+  // ---- 回复详情弹窗 ----
+  function openReplyDetail(memoId, idx) {
+    const memo = memos.find(m => m.id === memoId);
+    if (!memo || !memo.replyData || !memo.replyData.replies || idx >= memo.replyData.replies.length) { logWarn('RD', '未找到回复'); return; }
+    const reply = memo.replyData.replies[idx];
+    const charName = reply.characterName || memo.replyData.characterName || '未知';
+    const isConfirmed = reply.isConfirmed || false;
+
+    const old = document.querySelector('.reply-detail-overlay');
+    if (old) old.remove();
+    const ov = document.createElement('div');
+    ov.className = 'reply-detail-overlay';
+
+    let actionsHtml = '';
+    let footerHtml = '';
+    if (!isConfirmed) {
+      actionsHtml = `<div class="rd-actions"><button class="btn" id="rdRegen">重新生成</button><button class="btn btn-danger-sm" id="rdDel">删除</button></div>`;
+      footerHtml = `<div class="rd-footer"><button class="btn btn-primary" id="rdConfirm">确认</button></div>`;
+    } else {
+      actionsHtml = `<div class="rd-actions"><button class="btn btn-danger-sm" id="rdDel">删除</button></div>`;
+      footerHtml = `<div class="rd-footer"><button class="btn btn-primary" id="rdClose">关闭</button></div>`;
+    }
+
+    ov.innerHTML = `<div class="reply-detail-panel"><div class="rd-header"><div class="rd-name">${escHtml(charName)}</div>${actionsHtml}</div><div class="rd-content" id="rdContent">${escHtml(reply.content)}</div>${footerHtml}</div>`;
+    document.body.appendChild(ov);
+
+    const regen = document.getElementById('rdRegen');
+    if (regen) {
+      regen.addEventListener('click', async () => {
+        regen.textContent = '生成中...';
+        regen.disabled = true;
+        try {
+          const result = await AiPhone.ai.generate({
+            characterId: memo.replyData.characterId || memo.replyData.replies[idx].characterId,
+            appTags: ['memo', 'special'],
+            instruction: '用户备忘录内容: ' + memo.content + '\n请重新生成一句角色回复，要求与备忘录内容相关。尽量简短（50字以内），只输出一句回复。'
+          });
+          let nc = result.text || '重新生成的内容';
+          nc = cleanAI(nc);
+          memo.replyData.replies[idx].content = nc;
+          await saveMemos();
+          document.getElementById('rdContent').textContent = nc;
+          showToast('已重新生成');
+        } catch(e) { showError('重新生成失败', e.message); }
+        regen.textContent = '重新生成';
+        regen.disabled = false;
+      });
+    }
+
+    document.getElementById('rdDel').addEventListener('click', () => {
+      showConfirm('删除回复', '确定删除？', async (confirmed) => {
+        if (confirmed) {
+          memo.replyData.replies.splice(idx, 1);
+          if (!memo.replyData.replies.length) delete memo.replyData;
+          await saveMemos();
+          render();
+          ov.remove();
+          showToast('已删除');
+        }
+        closeConfirm();
+      }, true);
+    });
+
+    const cfm = document.getElementById('rdConfirm');
+    if (cfm) {
+      cfm.addEventListener('click', () => {
+        showConfirm('确认回复', '注意：确认后无法重新生成', async (confirmed) => {
+          if (confirmed) {
+            reply.isConfirmed = true;
+            await saveMemos();
+            ov.remove();
+            render();
+            openReplyDetail(memoId, idx);
+            showToast('已确认');
+          }
+          closeConfirm();
+        }, true);
+      });
+    }
+
+    const closeBtn = document.getElementById('rdClose');
+    if (closeBtn) closeBtn.addEventListener('click', () => ov.remove());
+  }
+
+  // ---- 好奇机制 ----
+  function showCuriousPanel(text, phase) {
+    const old = document.querySelector('.curious-overlay');
+    if (old) old.remove();
+    const ov = document.createElement('div');
+    ov.className = 'curious-overlay';
+
+    const isGiveup = phase === 'giveup';
+    const isForceAgree = phase === 'force_agree';
+    const isFakeGiveup = phase === 'fake_giveup';
+    const isStillWant = phase === 'still_want';
+
+    let actions = '';
+    if (isGiveup || isFakeGiveup) {
+      actions = `<div class="curious-actions"><button class="btn btn-primary" id="curiousConfirm">确认</button></div>`;
+    } else if (isForceAgree) {
+      actions = `<div class="curious-actions"><button class="btn btn-outline" id="curiousRefuse" disabled>拒绝</button><button class="btn btn-primary" id="curiousAgree">同意</button></div>`;
+    } else {
+      actions = `<div class="curious-actions"><button class="btn btn-outline" id="curiousRefuse">拒绝</button><button class="btn btn-primary" id="curiousAgree">同意</button></div>`;
+    }
+
+    let textDisplay = text;
+    if (isGiveup || isFakeGiveup) {
+      textDisplay = `${curiousCtx.characterName}给你发送了一条新消息，要去看看吗？`;
+    }
+    ov.innerHTML = `<div class="curious-panel"><div class="curious-body"><div class="curious-name-box"><div class="name">${escHtml(curiousCtx.characterName)}</div></div><div class="curious-text">${escHtml(textDisplay)}</div></div>${actions}</div>`;
+    document.body.appendChild(ov);
+
+    if (isGiveup || isFakeGiveup) {
+      const cfm = document.getElementById('curiousConfirm');
+      if (cfm) {
+        cfm.addEventListener('click', () => {
+          ov.remove();
+          if (isFakeGiveup) {
+            triggerStillWant();
+          } else {
+            curiousActive = false;
+            const settings = getSettings();
+            if (Math.random() < settings.giveup.prob / 100 && !giveupMessageSent && !giveupLock) {
+              giveupLock = true;
+              sendGiveupMessage();
+            }
+            curiousCtx.attempt = 0;
+            showToast(curiousCtx.characterName + ' 放弃了查看');
+          }
+        });
+      }
+      return;
+    }
+
+    if (isStillWant) {
+      const agree = document.getElementById('curiousAgree');
+      if (agree) {
+        agree.addEventListener('click', () => {
+          ov.remove();
+          curiousActive = false;
+          handleCuriousAgree();
+        });
+      }
+      const refuse = document.getElementById('curiousRefuse');
+      if (refuse) {
+        refuse.addEventListener('click', () => {
+          ov.remove();
+          curiousCtx.attempt++;
+          handleCuriousRefuse();
+        });
+      }
+      return;
+    }
+
+    const agree = document.getElementById('curiousAgree');
+    if (agree) {
+      agree.addEventListener('click', () => {
+        ov.remove();
+        curiousActive = false;
+        handleCuriousAgree();
+      });
+    }
+    const refuse = document.getElementById('curiousRefuse');
+    if (refuse) {
+      refuse.addEventListener('click', () => {
+        ov.remove();
+        curiousCtx.attempt++;
+        handleCuriousRefuse();
+      });
+    }
+  }
+
+  function triggerStillWant() {
+    AiPhone.ai.generate({
+      characterId: curiousCtx.characterId,
+      appTags: ['memo', 'curious', 'refuse'],
+      instruction: '用户刚才拒绝了你的请求，你嘴上说放弃了，但其实心里还是想看。请根据你的角色性格生成一句"还是很想看"的话。只输出一句，不要提及次数。'
+    }).then(res => {
+      let reply = res.text || '还是蛮想看的...';
+      reply = cleanAI(reply);
+      showCuriousPanel(reply, 'still_want');
+    }).catch(e => {
+      logWarn('STILL_WANT', e.message);
+      showCuriousPanel('还是蛮想看的...', 'still_want');
+    });
+  }
+
+  async function sendGiveupMessage() {
+    try {
+      const result = await AiPhone.ai.generate({
+        characterId: curiousCtx.characterId,
+        appTags: ['memo', 'curious', 'refuse'],
+        instruction: '用户多次拒绝了你查看备忘录的请求，你最终放弃了。请根据你的角色性格生成一句"还是很想看"或"真的不给我看吗"之类的话，表达你虽然放弃但仍有一丝不甘心。只输出一句，不要有多余内容。'
+      });
+      let reply = result.text || '还是很想看...';
+      reply = cleanAI(reply);
+      if (reply.trim()) {
+        await AiPhone.chat.writeHistory({
+          characterId: curiousCtx.characterId,
+          role: 'assistant',
+          content: reply
+        });
+        showMessageNotification(curiousCtx.characterName, curiousCtx.characterId);
+      }
+    } catch(e) { logWarn('GIVEUP_MSG', e.message); }
+    giveupLock = false;
+  }
+
+  function showProgress(cb) {
+    const old = document.querySelector('.reading-progress');
+    if (old) old.remove();
+    const el = document.createElement('div');
+    el.className = 'reading-progress';
+    el.innerHTML = `<div class="progress-text">正在阅读备忘录...</div><div class="progress-bar"><div class="fill" id="progressFill"></div></div>`;
+    document.body.appendChild(el);
+    const fill = document.getElementById('progressFill');
+    let p = 0;
+    const dur = 3000, step = 50;
+    const timer = setInterval(() => {
+      p += (step / dur) * 100;
+      if (p >= 100) { p = 100; clearInterval(timer); el.remove(); cb(); }
+      fill.style.width = p + '%';
+    }, step);
+  }
+
+  // ---- triggerCurious ----
+  async function triggerCurious(memoContent, memoId, source) {
+    if (curiousActive) return;
+    const targetMemo = memos.find(m => m.id === memoId);
+    if (!targetMemo) return;
+    const isEncrypted = targetMemo.encrypted === true;
+
+    const settings = getSettings();
+    const target = dev.curiousTarget || { encrypted: true, unencrypted: false };
+    let allowed = false;
+    if (isEncrypted && target.encrypted) allowed = true;
+    if (!isEncrypted && target.unencrypted) allowed = true;
+    if (!allowed) return;
+
+    let should = memoContent.length > 200 ? true : Math.random() < settings.curious.prob / 100;
+    if (!should) return;
+
+    curiousActive = true;
+    giveupMessageSent = false;
+    giveupLock = false;
+
+    try {
+      const chars = await AiPhone.characters.list();
+      if (!chars || !chars.length) { curiousActive = false; return; }
+      const ch = chars[Math.floor(Math.random() * chars.length)];
+
+      let force = false;
+      if (settings.force.mode === 'prob') {
+        if (Math.random() < settings.force.prob / 100) force = true;
+      } else {
+        try {
+          const char = await AiPhone.characters.get(ch.id);
+          const rel = await AiPhone.characters.readRelations({ characterId: ch.id });
+          const paranoid = char?.personality?.includes('偏执') || false;
+          const intimacy = rel?.intimacy || 0;
+          const count = (paranoid ? 1 : 0) + (intimacy >= 85 ? 1 : 0);
+          const rollProb = (settings.forceRollProb ?? 10) / 100;
+          if (count >= 2 && Math.random() < rollProb) force = true;
+        } catch(e) {}
+      }
+
+      curiousCtx = {
+        characterId: ch.id,
+        characterName: ch.name || '好友',
+        attempt: 0,
+        maxAttempts: 5,
+        isForce: force,
+        memoContent: memoContent,
+        memoId: memoId,
+        forceMaxAttempts: 4,
+        fakeGiveupUsed: false
+      };
+
+      showCuriousPanel('「' + curiousCtx.characterName + '」想看看你写的备忘录，可以吗？', 'request');
+    } catch(e) { logWarn('CURIOUS', e.message); curiousActive = false; }
+  }
+
+  // ---- handleCuriousAgree（含关怀功能） ----
+  async function handleCuriousAgree() {
+    showProgress(async () => {
+      const target = memos.find(m => m.id === curiousCtx.memoId);
+      const imgMsgs = target ? await getMemoImagesForAI(target) : [];
+      const result = await AiPhone.ai.generate({
+        characterId: curiousCtx.characterId,
+        appTags: ['memo', 'special'],
+        messages: imgMsgs,
+        instruction: '用户备忘录内容: ' + curiousCtx.memoContent + (imgMsgs.length ? '\n备忘录中还包含' + imgMsgs.length + '张图片，请结合图片内容一起理解。' : '') + '\n请生成一句角色回复，要求与备忘录内容相关。尽量简短（50字以内），只输出一句回复。'
+      });
+      let content = result.text || '好的，我看看。';
+      content = cleanAI(content);
+      if (!content) content = '好的，我看看。';
+
+      if (target) {
+        if (!target.replyData) target.replyData = { characterId: curiousCtx.characterId, characterName: curiousCtx.characterName, replies: [] };
+        const entry = {
+          content: content,
+          createdAt: new Date().toISOString(),
+          isConfirmed: false,
+          source: 'curious',
+          memoryAppEventId: null,
+          characterName: curiousCtx.characterName,
+          characterId: curiousCtx.characterId
+        };
+        target.replyData.replies.push(entry);
+        await saveMemos();
+        render();
+
+        // ---- 写入记忆 ----
+        const isForce = curiousCtx.isForce;
+        const isFinalAgree = curiousCtx.attempt >= (isForce ? curiousCtx.forceMaxAttempts : curiousCtx.maxAttempts);
+        const uName = await getUserDisplayName();
+        const cName = curiousCtx.characterName || '角色';
+        let memoryTitle = '';
+        let memoryContent = '';
+
+        if (isForce) {
+          if (isFinalAgree && curiousCtx.attempt >= curiousCtx.forceMaxAttempts - 1) {
+            memoryTitle = '曾对' + uName + '的备忘录[' + curiousCtx.memoId + ']产生了强烈的好奇，即使用户拒绝，依旧坚持查看，最后强制' + uName + '同意查看。';
+            memoryContent = '加密备忘录内容是：' + curiousCtx.memoContent + '，' + cName + '生成的回复是：' + content;
+          } else {
+            memoryTitle = '曾对' + uName + '的备忘录产生了强烈的好奇，' + uName + '同意查看。';
+            memoryContent = '加密备忘录内容是：' + curiousCtx.memoContent + '，' + cName + '生成的回复是：' + content;
+          }
+        } else {
+          memoryTitle = '曾对' + uName + '的备忘录[' + curiousCtx.memoId + ']产生了好奇，' + uName + '同意查看。';
+          memoryContent = '备忘录内容是：' + curiousCtx.memoContent + '，' + cName + '生成的回复是：' + content;
+        }
+        await writeCharacterMemory(curiousCtx.characterId, memoryTitle, memoryContent);
+
+        // ---- 发消息策略：关怀优先（负面情绪且关怀开启），否则按「好奇同意后主动发消息」开关 ----
+        const contentLower = target.content.toLowerCase();
+        const negativeKeywords = ['难过', '伤心', '崩溃', '绝望', '痛苦', '抑郁', '焦虑', '愤怒', '生气', '恨', '受不了', '想死', '活不下去', '痛哭', '大哭', '绝望了', '心碎', '无助', '孤独', 'emo', '玉玉', '抑郁了', '气炸', '暴怒', '恼火', '焦躁', '不安', '心慌', '害怕', '恐慌', '紧张', '窒息', '忧愁', '忧伤', '哀愁', '苦闷', '郁闷', '烦死', '发愁', '难受', '煎熬', '折磨', '撑不住', '扛不住'];
+        let needsCare = false;
+        for (const kw of negativeKeywords) {
+          if (contentLower.includes(kw)) {
+            needsCare = true;
+            break;
+          }
+        }
+        if (dev.careEnabled && needsCare && target.type === 'user') {
+          try {
+            const careResult = await AiPhone.ai.generate({
+              characterId: curiousCtx.characterId,
+              appTags: ['memo', 'care'],
+              messages: imgMsgs,
+              instruction: `你看到用户写下了一条备忘录，内容包含负面情绪${imgMsgs.length ? '，并附有' + imgMsgs.length + '张图片（请结合图片一起理解）' : ''}。请用你的角色身份生成一条安慰回复，字数不超过300字，根据内容严重程度酌情决定篇幅；宁可简短真诚，不要空洞套话。\n（前缀可选：我看到了你写的备忘录）\n（内容：表达你的担心和询问，语气温和，表示愿意倾听，示例：我很担心你，你还好吗）\n（后缀可选：我们聊聊，好吗）\n\n备忘录内容：${getMemoContentForAI(target)}`
+            });
+            let careReply = careResult.text || '我看到了你写的备忘录，我很担心你，你还好吗？我们聊聊，好吗？';
+            careReply = cleanAI(careReply);
+            if (careReply) {
+              await AiPhone.chat.writeHistory({
+                characterId: curiousCtx.characterId,
+                role: 'assistant',
+                content: careReply
+              });
+              await AiPhone.chat.requestReply({ characterId: curiousCtx.characterId });
+              showMessageNotification(curiousCtx.characterName, curiousCtx.characterId);
+            }
+          } catch(e) {
+            logWarn('CARE', e.message);
+          }
+        } else if (dev.curiousSendMsg) {
+          // 非关怀场景：重新生成一条"主动消息"（可选前缀+简短表达），再发送，不复用回复文本
+          try {
+            let sendText = content;
+            try {
+              const sendRes = await AiPhone.ai.generate({
+                characterId: curiousCtx.characterId,
+                appTags: ['memo', 'special'],
+                instruction: '你刚刚看了用户的备忘录，内容：' + curiousCtx.memoContent + '\n现在给用户主动发一条消息。可以以"我看到你的备忘录了/我写好了"等类似话语开头（可选），然后简短地说说你想说的话。要求：自然简短，不要复述备忘录原文，50字以内。'
+              });
+              sendText = cleanAI(sendRes.text || content);
+            } catch(e) {}
+            if (!sendText) sendText = content;
+            await AiPhone.chat.writeHistory({
+              characterId: curiousCtx.characterId,
+              role: 'assistant',
+              content: sendText
+            });
+            await AiPhone.chat.requestReply({ characterId: curiousCtx.characterId });
+            showMessageNotification(curiousCtx.characterName, curiousCtx.characterId);
+          } catch(e) { logWarn('CURIOUS_SEND', e.message); }
+        }
+
+        const idx = target.replyData.replies.length - 1;
+        openReplyDetail(curiousCtx.memoId, idx);
+        showToast('已生成回复');
+      }
+      curiousCtx.attempt = 0;
+    });
+  }
+
+  async function handleCuriousRefuse() {
+    const isForce = curiousCtx.isForce;
+    const maxAttempts = isForce ? curiousCtx.forceMaxAttempts : curiousCtx.maxAttempts;
+
+    // 写入记忆：拒绝
+    if (curiousCtx.attempt >= maxAttempts - 1 || !isForce) {
+      const uName = await getUserDisplayName();
+      await writeCharacterMemory(curiousCtx.characterId, '曾对' + uName + '的加密备忘录[' + curiousCtx.memoId + ']产生了好奇，但请求查看被' + uName + '拒绝。', '');
+    }
+
+    if (curiousCtx.attempt >= maxAttempts) {
+      if (isForce) {
+        const result = await AiPhone.ai.generate({
+          characterId: curiousCtx.characterId,
+          appTags: ['memo', 'curious', 'refuse'],
+          instruction: '用户多次拒绝了你。你发自内心非常想看，请根据你的性格（可以是哭/怒/撒娇/坚持）生成一句"你必须同意"的话。只输出一句，不要提及次数。'
+        });
+        let reply = result.text || '你必须点同意。';
+        reply = cleanAI(reply);
+        showCuriousPanel(reply, 'force_agree');
+      } else {
+        const result = await AiPhone.ai.generate({
+          characterId: curiousCtx.characterId,
+          appTags: ['memo', 'curious', 'refuse'],
+          instruction: '用户多次拒绝了你。请生成一句放弃的话。只输出一句，不要提及次数。'
+        });
+        let reply = result.text || '好吧，那我不打扰你了。';
+        reply = cleanAI(reply);
+        showCuriousPanel(reply, 'giveup');
+      }
+      return;
+    }
+
+    const settings = getSettings();
+    if (isForce) {
+      const canFakeGiveup = !curiousCtx.fakeGiveupUsed &&
+                            curiousCtx.attempt >= 2 &&
+                            curiousCtx.attempt <= 4;
+
+      if (canFakeGiveup && Math.random() < settings.fakeGiveupProb / 100) {
+        curiousCtx.fakeGiveupUsed = true;
+        const result = await AiPhone.ai.generate({
+          characterId: curiousCtx.characterId,
+          appTags: ['memo', 'curious', 'refuse'],
+          instruction: '用户拒绝了你。请生成一句放弃的话，但语气中透露一丝不甘心。只输出一句，不要提及次数。'
+        });
+        let reply = result.text || '好吧，那我不看了...';
+        reply = cleanAI(reply);
+        showCuriousPanel(reply, 'fake_giveup');
+        return;
+      }
+    }
+
+    if (!isForce && curiousCtx.attempt >= 1) {
+      if (Math.random() < settings.refuseGiveupProb / 100) {
+        const result = await AiPhone.ai.generate({
+          characterId: curiousCtx.characterId,
+          appTags: ['memo', 'curious', 'refuse'],
+          instruction: '用户拒绝了你。请生成一句放弃的话。只输出一句，不要提及次数。'
+        });
+        let reply = result.text || '好吧，那我不打扰你了。';
+        reply = cleanAI(reply);
+        showCuriousPanel(reply, 'giveup');
+        return;
+      }
+    }
+
+    const result = await AiPhone.ai.generate({
+      characterId: curiousCtx.characterId,
+      appTags: ['memo', 'curious', 'refuse'],
+      instruction: '用户拒绝了你。请根据你的角色性格生成一句坚持想看的话。只输出一句，不要提及次数。'
+    });
+    let reply = result.text || '就看一下嘛。';
+    reply = cleanAI(reply);
+    showCuriousPanel(reply, 'request');
+  }
+
+  // ---- 主动请求 ----
+  function setupListener() {
+    try {
+      AiPhone.on('chat.message.created', async (payload) => {
+        await ensureMemosLoaded();
+        const text = payload.message?.content || '';
+        const role = payload.message?.role || '';
+        const charId = payload.characterId;
+        const sessionId = payload.sessionId;
+        if (role !== 'user') return;
+
+        // 分享卡片等系统写入的 user 消息直接跳过（文本含"分享备忘录ID/挂载回复"等特征），
+        // 否则会误触发"主动请求"流程并可能报错弹窗（分享本身已成功）。
+        if (text.includes('分享备忘录ID') || text.includes('挂载回复') || /^\s*分享/.test(text)) return;
+
+        const isDaibi = text.includes('帮我记') || text.includes('帮我写') || (text.includes('帮') && (text.includes('记') || text.includes('写')));
+        const isReply = (text.includes('回复') || text.includes('看看')) && !isDaibi;
+        const isMemo = text.includes('留言') && !isDaibi && !isReply;
+
+        const hasAbility = text.includes('能') || text.includes('可以') || text.includes('能不能') || text.includes('给我') || text.includes('帮');
+        if (!hasAbility) return;
+
+        logInfo('LISTEN', '检测到请求: ' + text);
+
+        try {
+          const char = await AiPhone.characters.get(charId);
+          if (!char) return;
+          const charName = char.name || '角色';
+
+          if (isDaibi) {
+            let content = text.replace(/帮我记|帮我写|帮.*?记|帮.*?写/g, '').trim() || '（未指定内容）';
+            // 用户话术里的「隔断/新建文本框」等指令词 → [新文本框] 分隔符，无需用户写符号
+            content = naturalToBlocks(content);
+            // 代笔：整条都是角色所写，首页有「角色代笔」徽章标识来源，编辑器内不逐块标注"来自xx"
+            const memo = await addMemo(content, false, null, 'daibi', { characterName: charName, source: 'invite', blocks: roleTextToBlocks(content) });
+            if (memo) {
+              memo.characterName = charName;
+              await saveMemos();
+              render();
+              await AiPhone.chat.writeHistory({ characterId: charId, role: 'assistant', content: '好呀，帮你记下来了。' });
+              await AiPhone.chat.requestReply({ characterId: charId });
+              logInfo('LISTEN', '已代笔写入');
+            }
+            return;
+          }
+
+          const history = await AiPhone.chat.readHistory({ sessionId: sessionId, limit: 10 });
+          let shared = null;
+          for (const msg of history) {
+            if (msg.role === 'user' && msg.content && msg.content.includes('[分享')) {
+              const m = msg.content.match(/\[分享[^\]]*\]\s*(.+)/);
+              if (m) { shared = { content: m[1], full: msg.content }; break; }
+            }
+          }
+
+          if (shared && isReply) {
+            let targetId = null;
+            const idMatch = shared.full.match(/ID:\s*([a-zA-Z0-9]+)/);
+            if (idMatch) targetId = idMatch[1];
+
+            const r = await AiPhone.ai.generate({
+              characterId: charId,
+              appTags: ['memo', 'invite'],
+              instruction: '用户分享了一条备忘录并邀请你回复。用户消息：' + text + '\n备忘录内容：' + shared.content + '\n请根据角色性格决定是否同意。如果同意，输出「同意」；如果拒绝，输出一句拒绝语。只输出内容。'
+            });
+            let response = r.text || '同意';
+            response = cleanAI(response);
+
+            if (response.includes('同意') || response.includes('好') || response.includes('可以')) {
+              if (targetId) {
+                const target = memos.find(m => m.id === targetId);
+                if (target && target.replyData && target.replyData.replies && target.replyData.replies.length > 0) {
+                  showConfirm('已有回复', '该备忘录已有角色回复，是否追加？', async (confirmed) => {
+                    if (confirmed) {
+                      await generateDirectReply(charId, shared.content, targetId, charName);
+                      await AiPhone.chat.writeHistory({ characterId: charId, role: 'assistant', content: '好呀，给你留了一条回复。' });
+                      await AiPhone.chat.requestReply({ characterId: charId });
+                    }
+                    closeConfirm();
+                  }, true);
+                  return;
+                }
+                await generateDirectReply(charId, shared.content, targetId, charName);
+                await AiPhone.chat.writeHistory({ characterId: charId, role: 'assistant', content: '好呀，给你留了一条回复。' });
+                await AiPhone.chat.requestReply({ characterId: charId });
+              } else {
+                showToast('未能找到目标备忘录 ID');
+              }
+            } else {
+              await AiPhone.chat.writeHistory({ characterId: charId, role: 'assistant', content: response });
+              await AiPhone.chat.requestReply({ characterId: charId });
+            }
+            return;
+          }
+
+          if (isMemo) {
+            const r = await AiPhone.ai.generate({
+              characterId: charId,
+              appTags: ['memo', 'special'],
+              instruction: '用户想让你在备忘录里留一条言。用户消息：' + text + '\n请根据角色性格决定是否同意。如果同意，输出「同意」；如果拒绝，输出一句拒绝语。只输出内容。'
+            });
+            let response = r.text || '同意';
+            response = cleanAI(response);
+            if (response.includes('同意') || response.includes('好') || response.includes('可以')) {
+              let content = text.replace(/留言/g, '').replace(/能|可以|能不能|给我/g, '').trim() || '（未指定内容）';
+              // 用户话术里的分隔指令词 → [新文本框] 分隔符
+              content = naturalToBlocks(content);
+              const memo = await addMemo(content, false, null, 'special', { characterName: charName, source: 'invite', blocks: roleTextToBlocks(content) });
+              if (memo) {
+                memo.characterName = charName;
+                await saveMemos();
+                render();
+                await AiPhone.chat.writeHistory({ characterId: charId, role: 'assistant', content: '好呀，给你留了一条言。' });
+                await AiPhone.chat.requestReply({ characterId: charId });
+                logInfo('LISTEN', '已留言');
+              }
+            } else {
+              await AiPhone.chat.writeHistory({ characterId: charId, role: 'assistant', content: response });
+              await AiPhone.chat.requestReply({ characterId: charId });
+            }
+            return;
+          }
+        } catch(e) {
+          // 监听器失败只记日志，不弹错误框——避免打断用户（例如分享成功后的卡片消息）
+          logWarn('LISTEN', e.message);
+        }
+      });
+      logInfo('LISTEN', '监听已设置');
+    } catch(e) {
+      logWarn('LISTEN', '设置失败', e.message);
+    }
+  }
+
+  async function generateDirectReply(charId, memoContent, targetId, charName) {
+    try {
+      const name = charName || '角色';
+      const tgt = memos.find(m => m.id === targetId);
+      const imgMsgs = tgt ? await getMemoImagesForAI(tgt) : [];
+      const memoForAI = tgt ? getMemoContentForAI(tgt) : (memoContent || '');
+      const result = await AiPhone.ai.generate({
+        characterId: charId,
+        appTags: ['memo', 'special'],
+        messages: imgMsgs,
+        instruction: '用户备忘录内容: ' + memoForAI + (imgMsgs.length ? '\n备忘录中还包含' + imgMsgs.length + '张图片，请结合图片内容一起理解。' : '') + '\n请生成一句角色回复，要求与备忘录内容相关。尽量简短（50字以内），只输出一句回复。'
+      });
+      let content = result.text || '好的，我看看。';
+      content = cleanAI(content);
+      if (!content) content = '好的，我看看。';
+      const target = memos.find(m => m.id === targetId);
+      if (target) {
+        if (!target.replyData) target.replyData = { characterId: charId, characterName: name, replies: [] };
+        const entry = {
+          content: content,
+          createdAt: new Date().toISOString(),
+          isConfirmed: false,
+          source: 'invite',
+          memoryAppEventId: null,
+          characterName: name,
+          characterId: charId
+        };
+        target.replyData.replies.push(entry);
+        await saveMemos();
+        render();
+        await pushEditHistory(targetId, target._title || '', target.content || '', target.blocks);
+        const idx = target.replyData.replies.length - 1;
+        openReplyDetail(targetId, idx);
+        showToast('已生成回复');
+      }
+    } catch(e) { logWarn('GEN_REPLY', e.message); showToast('生成回复失败'); }
+  }
+
+  // ---- 工具注册 ----
+  function registerTools() {
+    try {
+      // read-memo（v3 逻辑，保持不变）
+      AiPhone.tools.handle('readMemoHandler', async (args) => {
+        await ensureMemosLoaded();
+        const q = args.query || '';
+        let limit = args.limit || 0;
+        const timeRange = args.timeRange || '';
+        const favoritesOnly = args.favoritesOnly || false;
+        const readAll = args.readAll || false;
+        const ctx = args._context || {};
+        let callerId = ctx.characterId || null;
+
+        if (!callerId) {
+          try {
+            const session = await AiPhone.chat.getCurrentSession();
+            if (session && session.characterId) {
+              callerId = session.characterId;
+            }
+          } catch(e) {}
+        }
+
+        let userName = '用户';
+        try {
+          const profile = await AiPhone.user.getProfile();
+          if (profile?.name) userName = profile.name;
+        } catch(e) {}
+
+        const isFriend = !dev.friendReadLimit && callerId && denseFriendId && String(callerId) === String(denseFriendId);
+
+        let allList = memos.slice();
+
+        if (favoritesOnly) {
+          allList = allList.filter(m => m.favorite === true);
+        }
+
+        if (q.trim()) {
+          const s = q.trim().toLowerCase();
+          allList = allList.filter(m => m.content.toLowerCase().includes(s));
+        }
+
+        if (timeRange) {
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          if (timeRange.includes('今天')) {
+            allList = allList.filter(m => new Date(m.createdAt) >= today);
+          } else if (timeRange.includes('本周')) {
+            const weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - today.getDay());
+            allList = allList.filter(m => new Date(m.createdAt) >= weekStart);
+          }
+        }
+
+        if (!readAll && allList.length > 10) {
+          const favList = allList.filter(m => m.favorite);
+          const normalList = allList.filter(m => !m.favorite);
+          const result = [...favList];
+          if (result.length < 10) {
+            const need = 10 - result.length;
+            const sortedNormal = normalList.sort((a,b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+            result.push(...sortedNormal.slice(0, need));
+          }
+          allList = result;
+        }
+
+        if (limit > 0 && allList.length > limit) {
+          allList = allList.slice(0, limit);
+        }
+
+        if (!allList.length) {
+          return { result: '用户没有匹配的备忘录记录。' };
+        }
+
+        let resultText = '用户有以下备忘录记录：\n\n';
+        for (let i = 0; i < allList.length; i++) {
+          const m = allList[i];
+          const isEncrypted = m.encrypted === true;
+          const type = m.type || 'user';
+          const isSpecial = type === 'special';
+          const isDaibi = type === 'daibi';
+          const isReply = type === 'reply';
+          const memoCharName = m.characterName || '';
+          const isSelf = callerId && m.characterId && String(callerId) === String(m.characterId);
+
+          resultText += `【${i+1}】ID: ${m.id}\n`;
+          resultText += `时间：${formatTime(m.createdAt)}\n`;
+
+          if (isFriend) {
+            let typeLabel = '';
+            if (isSpecial) typeLabel = '角色留言';
+            else if (isDaibi) typeLabel = '角色代笔';
+            else if (isReply) typeLabel = '角色回复';
+            else typeLabel = '用户备忘录';
+            resultText += `类型：${typeLabel}\n`;
+
+            let authorDisplay = memoCharName || '用户';
+            if (type === 'user' && !memoCharName) authorDisplay = userName;
+            resultText += `作者：${authorDisplay}\n`;
+            resultText += `内容：${getMemoContentForAI(m)}\n`;
+
+            if (m.replyData && m.replyData.replies && m.replyData.replies.length > 0) {
+              resultText += '挂载回复\n';
+              for (let j = 0; j < m.replyData.replies.length; j++) {
+                const r = m.replyData.replies[j];
+                const rCharName = r.characterName || '未知';
+                const rTime = formatTime(r.createdAt);
+                resultText += `  - 回复${j+1} (${rTime})：作者：${rCharName}，内容：${r.content || ''}\n`;
+              }
+            } else {
+              resultText += '挂载回复：无\n';
+            }
+            resultText += '\n';
+            continue;
+          }
+
+          // ---- 非密友逻辑 ----
+          if (isEncrypted) {
+            const openTo = m.encryptedOpenTo || [];
+            const isOpen = callerId && openTo.includes(callerId);
+
+            if (isOpen) {
+              let typeLabel = '';
+              if (isSpecial) typeLabel = '角色留言';
+              else if (isDaibi) typeLabel = '角色代笔';
+              else if (isReply) typeLabel = '角色回复';
+              else typeLabel = '用户备忘录';
+              resultText += `类型：${typeLabel}\n`;
+
+              if (type === 'user') {
+                resultText += `作者：${userName}\n`;
+                resultText += `内容：${getMemoContentForAI(m)}\n`;
+              } else if (isDaibi) {
+                if (isSelf) {
+                  resultText += `作者：${memoCharName || '未知'}\n`;
+                  resultText += `内容：${getMemoContentForAI(m)}\n`;
+                } else {
+                  resultText += `作者：未知\n`;
+                  resultText += `内容：${getMemoContentForAI(m)}\n`;
+                }
+              } else if (isSpecial) {
+                if (isSelf) {
+                  resultText += `作者：${memoCharName || '未知'}\n`;
+                  resultText += `内容：${getMemoContentForAI(m)}\n`;
+                } else {
+                  resultText += `作者：未知\n`;
+                  resultText += `内容：未知\n`;
+                }
+              } else {
+                resultText += `作者：${memoCharName || '未知'}\n`;
+                resultText += `内容：${getMemoContentForAI(m)}\n`;
+              }
+
+              if (m.replyData && m.replyData.replies && m.replyData.replies.length > 0) {
+                resultText += '挂载回复\n';
+                for (let j = 0; j < m.replyData.replies.length; j++) {
+                  const r = m.replyData.replies[j];
+                  const rCharName = r.characterName || '未知';
+                  const rCharId = r.characterId || null;
+                  const rIsSelf = callerId && rCharId && String(callerId) === String(rCharId);
+                  const rTime = formatTime(r.createdAt);
+                  if (rIsSelf) {
+                    resultText += `  - 回复${j+1} (${rTime})：作者：${rCharName}，内容：${r.content || ''}\n`;
+                  } else {
+                    resultText += `  - 回复${j+1} (${rTime})：作者：未知，内容：${r.content || ''}\n`;
+                  }
+                }
+              } else {
+                resultText += '挂载回复：无\n';
+              }
+              resultText += '\n';
+              continue;
+            } else {
+              resultText += `类型：未知\n`;
+              resultText += `作者：未知\n`;
+              resultText += `内容：未知\n`;
+              resultText += '挂载回复\n';
+              resultText += '  回复1：作者：未知，内容：未知\n';
+              resultText += '\n';
+              continue;
+            }
+          }
+
+          // ---- 未加密 ----
+          let typeLabel = '';
+          if (isSpecial) typeLabel = '角色留言';
+          else if (isDaibi) typeLabel = '角色代笔';
+          else if (isReply) typeLabel = '角色回复';
+          else typeLabel = '用户备忘录';
+          resultText += `类型：${typeLabel}\n`;
+
+          if (type === 'user') {
+            resultText += `作者：${userName}\n`;
+            resultText += `内容：${getMemoContentForAI(m)}\n`;
+          } else if (isDaibi) {
+            if (isSelf) {
+              resultText += `作者：${memoCharName || '未知'}\n`;
+              resultText += `内容：${getMemoContentForAI(m)}\n`;
+            } else {
+              resultText += `作者：未知\n`;
+              resultText += `内容：${getMemoContentForAI(m)}\n`;
+            }
+          } else if (isSpecial) {
+            if (isSelf) {
+              resultText += `作者：${memoCharName || '未知'}\n`;
+              resultText += `内容：${getMemoContentForAI(m)}\n`;
+            } else {
+              resultText += `作者：未知\n`;
+              resultText += `内容：未知\n`;
+            }
+          } else {
+            resultText += `作者：${memoCharName || '未知'}\n`;
+            resultText += `内容：${getMemoContentForAI(m)}\n`;
+          }
+
+          if (m.replyData && m.replyData.replies && m.replyData.replies.length > 0) {
+            resultText += '挂载回复\n';
+            for (let j = 0; j < m.replyData.replies.length; j++) {
+              const r = m.replyData.replies[j];
+              const rCharName = r.characterName || '未知';
+              const rCharId = r.characterId || null;
+              const rIsSelf = callerId && rCharId && String(callerId) === String(rCharId);
+              const rTime = formatTime(r.createdAt);
+              if (rIsSelf) {
+                resultText += `  - 回复${j+1} (${rTime})：作者：${rCharName}，内容：${r.content || ''}\n`;
+              } else {
+                resultText += `  - 回复${j+1} (${rTime})：作者：未知，内容：${r.content || ''}\n`;
+              }
+            }
+          } else {
+            resultText += '挂载回复：无\n';
+          }
+          resultText += '\n';
+        }
+
+        return { result: resultText };
+      });
+
+      // write-memo（仅 special / daibi）
+      AiPhone.tools.handle('writeMemoHandler', async (args) => {
+        await ensureMemosLoaded();
+        const c = args.content || '';
+        if (!c.trim()) return { result: '写入失败：内容不能为空' };
+
+        const ctx = args._context || {};
+        let charId = ctx.characterId || 'unknown';
+
+        if (!charId || charId === 'unknown') {
+          try {
+            const session = await AiPhone.chat.getCurrentSession();
+            if (session && session.characterId) {
+              charId = session.characterId;
+            }
+          } catch(e) {}
+        }
+
+        let charName = args.characterName || null;
+        if (!charName && charId && charId !== 'unknown') {
+          try {
+            const ch = await AiPhone.characters.get(charId);
+            if (ch && ch.name) charName = ch.name;
+          } catch(e) {
+            logWarn('TOOL', '从上下文获取角色名失败', e.message);
+          }
+        }
+
+        if (!charName) {
+          const errorMsg = '写入失败：缺少角色名，请传入 characterName 参数';
+          showError('角色名获取失败', errorMsg);
+          return { result: errorMsg };
+        }
+
+        const type = args.type || 'daibi';
+        if (type !== 'special' && type !== 'daibi') {
+          return { result: '写入失败：type 参数必须为 special 或 daibi' };
+        }
+
+        if (type === 'special') {
+          // 留言保持匿名（首页有"猜作者"玩法），不标 author；仍兼容自然分隔词
+          const memo = await addMemo(c, false, null, 'special', { characterName: charName, source: 'invite', characterId: charId, blocks: roleTextToBlocks(naturalToBlocks(c)) });
+          if (memo) { memo.characterName = charName; await saveMemos(); }
+          render();
+          return { result: '已成功写入角色留言：' + c.slice(0, 50) + (c.length > 50 ? '...' : '') };
+        }
+
+        // 代笔：整条都是角色所写，首页有「角色代笔」徽章标识来源，编辑器内不逐块标注"来自xx"
+        const memo = await addMemo(c, false, null, 'daibi', { characterName: charName, source: 'invite', characterId: charId, blocks: roleTextToBlocks(naturalToBlocks(c)) });
+        if (memo) { memo.characterName = charName; await saveMemos(); }
+        render();
+        return { result: '已成功写入角色代笔：' + c.slice(0, 50) + (c.length > 50 ? '...' : '') };
+      });
+
+      // write-reply
+      AiPhone.tools.handle('writeReplyHandler', async (args) => {
+        await ensureMemosLoaded();
+        const c = args.content || '';
+        if (!c.trim()) return { result: '回复失败：内容不能为空' };
+
+        const targetId = args.targetMemoId || null;
+        if (!targetId) return { result: '回复失败：缺少 targetMemoId 参数' };
+
+        const target = memos.find(m => m.id === targetId);
+        if (!target) return { result: '回复失败：目标备忘录不存在，targetMemoId=' + targetId };
+
+        if (target.type !== 'user') {
+          return { result: '该备忘录类型为[' + (target.type || '用户') + ']，不支持角色回复。角色会将备忘录的写入者当做你，可能产生不恰当的回复。' };
+        }
+
+        const ctx = args._context || {};
+        let charId = ctx.characterId || 'unknown';
+
+        if (!charId || charId === 'unknown') {
+          try {
+            const session = await AiPhone.chat.getCurrentSession();
+            if (session && session.characterId) {
+              charId = session.characterId;
+            }
+          } catch(e) {}
+        }
+
+        let charName = args.characterName || null;
+        if (!charName && charId && charId !== 'unknown') {
+          try {
+            const ch = await AiPhone.characters.get(charId);
+            if (ch && ch.name) charName = ch.name;
+          } catch(e) {
+            logWarn('TOOL', '从上下文获取角色名失败', e.message);
+          }
+        }
+
+        if (!charName) {
+          const errorMsg = '回复失败：缺少角色名，请传入 characterName 参数';
+          showError('角色名获取失败', errorMsg);
+          return { result: errorMsg };
+        }
+
+        if (!target.replyData) target.replyData = { characterId: charId, characterName: charName, replies: [] };
+        const entry = {
+          content: c,
+          createdAt: new Date().toISOString(),
+          isConfirmed: false,
+          source: 'invite',
+          memoryAppEventId: null,
+          characterName: charName,
+          characterId: charId
+        };
+        target.replyData.replies.push(entry);
+        await saveMemos();
+        render();
+        await pushEditHistory(targetId, target._title || '', target.content || '', target.blocks);
+        return { result: '已成功写入回复：' + c.slice(0, 50) + (c.length > 50 ? '...' : '') };
+      });
+
+      // dense-friend-tools
+      AiPhone.tools.handle('denseFriendHandler', async (args) => {
+        await ensureMemosLoaded();
+        const action = args.action || '';
+        const targetId = args.targetMemoId || null;
+        const content = args.content || '';
+        const ctx = args._context || {};
+        let callerId = ctx.characterId || null;
+
+        if (!callerId) {
+          try {
+            const session = await AiPhone.chat.getCurrentSession();
+            if (session && session.characterId) {
+              callerId = session.characterId;
+            }
+          } catch(e) {}
+        }
+
+        // 解析角色名（用于"来自xx"作者标记）
+        let charName = args.characterName || null;
+        if (!charName && callerId) {
+          try {
+            const ch = await AiPhone.characters.get(callerId);
+            if (ch && ch.name) charName = ch.name;
+          } catch(e) {}
+        }
+        if (!charName) charName = '角色';
+
+        const cfg = await AiPhone.db.list('config', { limit: 30 });
+        const friendCfg = cfg.find(c => c.id === 'denseFriend');
+        const currentDenseFriendId = friendCfg ? friendCfg.data : null;
+
+        if (!currentDenseFriendId) {
+          throw new Error('当前未绑定密友，请先在备忘录中绑定');
+        }
+        if (!callerId) {
+          throw new Error('无法识别您的身份，请确保在聊天中调用此工具');
+        }
+        if (String(callerId) !== String(currentDenseFriendId)) {
+          throw new Error('只有密友可以执行此操作');
+        }
+
+        const memo = memos.find(m => m.id === targetId);
+        if (!memo) {
+          return { result: '操作失败：未找到目标备忘录' };
+        }
+        if (memo.locked) {
+          return { result: '操作失败：该备忘录已锁定' };
+        }
+
+        switch (action) {
+          case 'delete': {
+            recycleBin.unshift({
+              id: memo.id,
+              data: JSON.parse(JSON.stringify(memo)),
+              deletedAt: new Date().toISOString()
+            });
+            if (recycleBin.length > RECYCLE_LIMIT) {
+              recycleBin = recycleBin.slice(0, RECYCLE_LIMIT);
+            }
+            const idx = memos.findIndex(m => m.id === targetId);
+            if (idx !== -1) memos.splice(idx, 1);
+            await saveMemos();
+            render();
+            return { result: '已成功删除备忘录' };
+          }
+          case 'edit': {
+            if (!content || !content.trim()) {
+              return { result: '编辑失败：内容不能为空' };
+            }
+            if (memo.locked) { return { result: '操作失败：该备忘录已锁定' }; }
+            // 编辑时同步重算 blocks，保证首页 content 与编辑器 blocks 一致
+            const oldBlocks = (Array.isArray(memo.blocks) && memo.blocks.length) ? memo.blocks : contentToBlocks(memo.content || '');
+            // 插入指令一：锚点式「跟在xx后面 / 在xx后面 / 跟xx后面 / xx之后」
+            const insertMatch = content.match(/(?:跟在?|在|跟)([^，。；;、\n]{1,20}?)\s*(?:后面|之后)/);
+            // 局部替换指令：「把XX改成YY / 将XX编辑为YY / XX替换成YY」等，
+            // 只改包含 XX 的文本块，保留该块原有 author 标记（有则保留、无则不加）
+            const replaceMatch = !insertMatch && content.match(/(?:把|将)([^，。；;、\n]{1,30}?)(?:改(?:成|为)|编辑(?:成|为)?|替换(?:成|为)?|变为|变成)([^，。；;、\n]{1,50})/);
+            // 插入指令二：无锚点但明确表达"新建文本框/插入/分段"（追加到末尾）
+            const appendInsert = !insertMatch && !replaceMatch && /(新建(?:一个)?文本框|新文本框|插入(?:一个)?(?:文本框)?|加(?:一个)?(?:新)?文本框|隔断|分块|分框|另起(?:一段)?|新起(?:一段)?|再写(?:一段)?|再记(?:一段)?)/.test(content);
+            let newBlocks;
+            if (insertMatch) {
+              // 锚点插入：在旧文本块中找锚点，其后插入新文本框；找不到锚点则追加末尾。
+              // 只有"插入"产生的新文本框才带 author（「来自xx」样式），这是密友协作标注。
+              const anchor = insertMatch[1].replace(/^我的/, '').trim();
+              const rest = naturalToBlocks(content.replace(insertMatch[0], ''));
+              const addBlocks = roleTextToBlocks(rest).map(b => (b.type === 'text' ? { ...b, author: charName } : b));
+              if (!addBlocks.length) return { result: '编辑失败：请在"跟在xx后面"后补充要加入的内容' };
+              let inserted = false;
+              const out = [];
+              for (const b of oldBlocks) {
+                out.push(b);
+                if (!inserted && b.type === 'text' && anchor && (b.text || '').includes(anchor)) {
+                  out.push(...addBlocks);
+                  inserted = true;
+                }
+              }
+              if (!inserted) out.push(...addBlocks);
+              newBlocks = out;
+            } else if (replaceMatch) {
+              // 局部替换：在旧文本块中找到包含 XX 的块，把其中的 XX 替换为 YY。
+              // 保留原块对象（author 标记有则保留、无则不加），其余块不动。
+              const oldStr = replaceMatch[1].replace(/^我的/, '').trim();
+              const newStr = (replaceMatch[2] || '').trim();
+              if (!oldStr) return { result: '编辑失败：未识别到要修改的原文' };
+              if (!newStr) return { result: '编辑失败：未识别到修改后的内容' };
+              let replaced = false;
+              const out = oldBlocks.map(b => {
+                if (!replaced && b.type === 'text' && (b.text || '').includes(oldStr)) {
+                  replaced = true;
+                  return { ...b, text: (b.text || '').replace(oldStr, newStr) };
+                }
+                return b;
+              });
+              if (!replaced) return { result: '编辑失败：未找到包含「' + oldStr + '」的内容' };
+              newBlocks = out;
+            } else if (appendInsert) {
+              // 追加插入：旧块全部保留，新内容作为新文本框追加到末尾，带「来自xx」样式
+              const textBlocks = roleTextToBlocks(naturalToBlocks(content)).map(b => (b.type === 'text' ? { ...b, author: charName } : b));
+              if (!textBlocks.length) return { result: '编辑失败：未识别到要插入的内容' };
+              newBlocks = [...oldBlocks, ...textBlocks];
+            } else {
+              // 整段重写（无插入意图）：把带 [新文本框]/[图片] 标记的内容解析回 blocks，
+              // 图片从旧 blocks 按顺序恢复 ref（角色保留 [图片] 标记则图片原样保留，删掉则删图）。
+              // 这是"编辑/改写"，文本块不带「来自xx」样式（样式只用于插入动作）。
+              newBlocks = structuredToBlocks(naturalToBlocks(content), oldBlocks);
+            }
+            memo.blocks = newBlocks;
+            memo.content = blocksToContent(newBlocks);
+            await saveMemos();
+            render();
+            await pushEditHistory(targetId, memo._title || '', memo.content || '', newBlocks);
+            return { result: '已成功编辑备忘录' };
+          }
+          case 'favorite': {
+            memo.favorite = !memo.favorite;
+            await saveMemos();
+            render();
+            return { result: memo.favorite ? '已收藏备忘录' : '已取消收藏' };
+          }
+          default:
+            return { result: '操作失败：未知操作' };
+        }
+      });
+
+      logInfo('TOOL', '工具注册成功');
+    } catch(e) { logWarn('TOOL', '注册失败', e.message); }
+  }
+
+  // ---- 初始化 ----
+  async function init() {
+    if (typeof AiPhone === 'undefined') {
+      document.body.innerHTML = '<div style="padding:40px;text-align:center;color:red;">错误：未找到 AiPhone SDK</div>';
+      return;
+    }
+
+    registerTools();
+    await loadDevFromDB();
+    applyCustomCss();
+    await loadEditHistory();
+
+    // ---- 缩小版编辑器事件 ----
+    miniEditBack.addEventListener('click', confirmBackFromEditor);
+    miniEditSave.addEventListener('click', () => {
+      saveDraftToStorage();
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    });
+    miniEditUndo.addEventListener('click', editUndo);
+    miniEditRedo.addEventListener('click', editRedo);
+    // 标题撤销：在值改变前（beforeinput）记录旧状态，undo 一次即可撤销最近输入
+    miniEditTitle.addEventListener('beforeinput', pushEditSnapshot);
+
+    // blocks 容器事件委托（一次性绑定）
+    setupBlocksDelegate();
+    // 说明：不再对图片块做 touchstart preventDefault——
+    // 它会锁死"手指按在图片上时"的滚动。防浏览器"保存图片"菜单
+    // 由 CSS（-webkit-touch-callout:none / user-select:none）与 contextmenu 拦截负责，
+    // 文本框聚焦编辑保持浏览器原生行为，滚动全程正常。
+
+    // 右下角 + 按钮：展开「新增文本框 / 添加图片」
+    editFabAdd.addEventListener('click', (e) => {
+      e.stopPropagation();
+      editFabMenu.classList.toggle('hidden');
+    });
+    editAddText.addEventListener('click', () => { editFabMenu.classList.add('hidden'); addTextBlock(); });
+    editAddImage.addEventListener('click', () => { editFabMenu.classList.add('hidden'); addImageBlock(); });
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.edit-fab-wrap')) editFabMenu.classList.add('hidden');
+    });
+
+    // 自动保存草稿：页面隐藏（切到小手机桌面/切走网页/关浏览器）时保存，保留编辑记录
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && miniEditorState.isOpen) {
+        saveDraftToStorage();
+      }
+    });
+
+    // ---- 全局事件 ----
+    gearBtn.addEventListener('click', () => { applyDevUI(); devOverlay.classList.remove('hidden'); });
+    devClose.addEventListener('click', () => devOverlay.classList.add('hidden'));
+    devConfirm.addEventListener('click', () => { readDev(); applyCustomCss(); devOverlay.classList.add('hidden'); showToast('设置已生效'); });
+
+    $('devForceProbMode').addEventListener('change', function() { $('devForceProb').disabled = false; });
+    $('devForceCondMode').addEventListener('change', function() { $('devForceProb').disabled = true; });
+    $('devResetDefaults').addEventListener('click', resetDevDefaults);
+
+    $('devSpecialGen').addEventListener('click', async () => {
+      devOverlay.classList.add('hidden');
+      showToast('正在生成角色留言...', true);
+      const n = await genSpecial(1);
+      if (n > 0) { showGenNotification(); render(); }
+    });
+    $('devReplyGen').addEventListener('click', async () => {
+      devOverlay.classList.add('hidden');
+      showToast('正在生成角色回复...', true);
+      const n = await genReply(1);
+      if (n > 0) { showGenNotification(); render(); }
+    });
+
+    // 指定角色：留言 / 回复
+    $('devSpecialCharsBtn').addEventListener('click', () => {
+      openCharPicker('选择留言角色', dev.specialChars, (ids) => {
+        dev.specialChars = ids;
+        saveDevToDB();
+        updateCharLabel('devSpecialCharsLabel', ids);
+        showToast('留言角色已更新');
+      });
+    });
+    $('devSpecialCharsClear').addEventListener('click', () => {
+      dev.specialChars = [];
+      saveDevToDB();
+      updateCharLabel('devSpecialCharsLabel', []);
+      showToast('已清空（使用全部角色）');
+    });
+    $('devReplyCharsBtn').addEventListener('click', () => {
+      openCharPicker('选择回复角色', dev.replyChars, (ids) => {
+        dev.replyChars = ids;
+        saveDevToDB();
+        updateCharLabel('devReplyCharsLabel', ids);
+        showToast('回复角色已更新');
+      });
+    });
+    $('devReplyCharsClear').addEventListener('click', () => {
+      dev.replyChars = [];
+      saveDevToDB();
+      updateCharLabel('devReplyCharsLabel', []);
+      showToast('已清空（使用全部角色）');
+    });
+
+    // 自定义 CSS：清空
+    $('devCssClear').addEventListener('click', () => {
+      $('devCustomCss').value = '';
+      dev.customCss = '';
+      applyCustomCss();
+      saveDevToDB();
+      showToast('已清空自定义 CSS');
+    });
+
+    await loadMemos();
+    await restoreDraft();
+
+    friendBadge.addEventListener('click', openFriendSelect);
+    headerRecycle.addEventListener('click', openRecycleBin);
+
+    fabAdd.addEventListener('click', () => openMiniEditor(null, true));
+
+    importExportBtn.addEventListener('click', openImport);
+    importClose.addEventListener('click', () => importModal.classList.add('hidden'));
+    getJsonFormatBtn.addEventListener('click', copyJsonTemplate);
+    importFileBtn.addEventListener('click', triggerBatch);
+    fileInput.addEventListener('change', handleFile);
+    imageFileInput.addEventListener('change', handleImageFile);
+    batchExportBtn.addEventListener('click', batchExport);
+
+    confirmNo.addEventListener('click', () => { if (confirmCb) confirmCb(false); closeConfirm(); });
+    confirmYes.addEventListener('click', () => { if (confirmCb) confirmCb(true); closeConfirm(); });
+
+    const tabButtons = document.querySelectorAll('.tabs button');
+    tabButtons.forEach(btn => btn.addEventListener('click', () => {
+      currentTab = btn.dataset.tab;
+      tabButtons.forEach(b => b.classList.toggle('active', b === btn));
+      render();
+    }));
+
+    searchInput.addEventListener('input', function() {
+      searchQuery = this.value;
+      render();
+    });
+
+    setupListener();
+
+    logInfo('INIT', '备忘录 APP 已启动');
+    console.log('✅ v4 最终版已加载');
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+
+  window.__debug = { memos: () => memos, add: addMemo, load: loadMemos, save: saveMemos, deleteAll: async () => { memos = []; await saveMemos(); render(); showToast('已清空'); }, dev: () => dev, recycle: () => recycleBin, friend: () => denseFriendId };
+})();
+</script>
+</body>
+</html>
