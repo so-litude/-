@@ -2280,8 +2280,12 @@
   function naturalToBlocks(text) {
     if (!text) return '';
     let t = String(text);
-    t = t.replace(/(新起(?:一段)?|再开(?:一段)?|另起(?:一段)?|新建(?:一个)?文本框|重新建(?:一个)?文本框|新开(?:一个)?文本框|另开(?:一个)?文本框|新文本框|新建文本框|隔断|隔开|分隔|分块|分框|分一下|再写一段|再记一段|换一段|换一块|另换一块)(?:一下|一截|开来|一些)?/g, '[新文本框]');
-    t = t.replace(/\[\s*新文本框\s*\]\s*[:：]?\s*/g, '[新文本框]');
+    // 先保护已写好的 [新文本框] 完整标记：否则下方关键词替换会把标记里的「新文本框」再套一层括号，
+    // 变成 [[新文本框]]，拆解后残留单个 [ ]（表现为 123[ 换行 ]456[ 这种坏块）
+    t = t.replace(/\[\s*新文本框\s*\]\s*[:：]?\s*/g, '\u0001');
+    t = t.replace(/(新起(?:一段)?|再开(?:一段)?|另起(?:一段)?|新建(?:一个)?文本框|重新建(?:一个)?文本框|新开(?:一个)?文本框|另开(?:一个)?文本框|新文本框|新建文本框|隔断|隔开|分隔|分块|分框|分一下|再写一段|再记一段|换一段|换一块|另换一块)(?:一下|一截|开来|一些)?/g, '\u0001');
+    t = t.replace(/\u0001+/g, '\u0001');
+    t = t.replace(/\u0001/g, '[新文本框]');
     return t;
   }
 
@@ -2302,6 +2306,16 @@
       return blocksToStructuredText(m.blocks);
     }
     return (m && m.content) ? m.content : '';
+  }
+
+  // 解析序数词：「第二个」→ 2、「第3个」→ 3；解析不了默认 1
+  function parseOrd(s) {
+    if (!s) return 1;
+    if (/^\d+$/.test(s)) return parseInt(s, 10);
+    const map = { '一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9 };
+    if (map[s] !== undefined) return map[s];
+    if (s === '十' || s === '10') return 10;
+    return 1;
   }
 
   // 把带结构标记的文本（[新文本框]/[图片]）解析回 blocks。
@@ -4470,21 +4484,29 @@
               if (!inserted) out.push(...addBlocks);
               newBlocks = out;
             } else if (replaceMatch) {
-              // 局部替换：在旧文本块中找到包含 XX 的块，把其中的 XX 替换为 YY。
-              // 保留原块对象（author 标记有则保留、无则不加），其余块不动。
-              const oldStr = replaceMatch[1].replace(/^我的/, '').trim();
+              // 局部替换：找到包含 XX 的文本块，把其中的 XX 替换为 YY。
+              // 默认改第 1 个匹配块；用户说「把第二个XX改成YY」时按序数改第 N 个匹配块。
+              // 保留原块对象（author 标记有则保留、无则不加），其余块不动，绝不新增框。
+              let rawOld = (replaceMatch[1] || '').replace(/^我的/, '').trim();
               const newStr = (replaceMatch[2] || '').trim();
+              const ordMatch = rawOld.match(/^第([一二三四五六七八九十\d]+)个/);
+              const ord = ordMatch ? parseOrd(ordMatch[1]) : 1;
+              rawOld = rawOld.replace(/^(?:第[一二三四五六七八九十\d]+个|前一个|上一个|上面(?:那个|这个)|下面(?:那个|这个)|刚才(?:那个|这个)|之前(?:那个|这个)|那个|这个)/, '').trim();
+              const oldStr = rawOld;
               if (!oldStr) return { result: '编辑失败：未识别到要修改的原文' };
               if (!newStr) return { result: '编辑失败：未识别到修改后的内容' };
-              let replaced = false;
-              const out = oldBlocks.map(b => {
-                if (!replaced && b.type === 'text' && (b.text || '').includes(oldStr)) {
-                  replaced = true;
+              const hitIdx = [];
+              oldBlocks.forEach((b, bi) => {
+                if (b.type === 'text' && (b.text || '').includes(oldStr)) hitIdx.push(bi);
+              });
+              if (!hitIdx.length) return { result: '编辑失败：未找到包含「' + oldStr + '」的内容' };
+              const targetBi = hitIdx[Math.min(ord, hitIdx.length) - 1];
+              const out = oldBlocks.map((b, bi) => {
+                if (bi === targetBi && b.type === 'text') {
                   return { ...b, text: (b.text || '').replace(oldStr, newStr) };
                 }
                 return b;
               });
-              if (!replaced) return { result: '编辑失败：未找到包含「' + oldStr + '」的内容' };
               newBlocks = out;
             } else if (appendInsert) {
               // 追加插入：旧块全部保留，新内容作为新文本框追加到末尾，带「来自xx」样式
