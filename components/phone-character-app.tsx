@@ -1760,6 +1760,7 @@ function CharArchiveView({
   const [showTimeZonePicker, setShowTimeZonePicker] = useState(false);
   const [timeZoneSearch, setTimeZoneSearch] = useState(char.timeZone || "");
   const [avatar, setAvatar] = useState<string | null>(char.avatar || null);
+  const [polaroidStyle, setPolaroidStyle] = useState<number>(char.polaroidStyle ?? 0);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [urlInput, setUrlInput] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -1812,6 +1813,7 @@ function CharArchiveView({
     if (briefPersona !== (char.briefPersona || "")) return true;
     if (timeZone !== (char.timeZone || "")) return true;
     if (avatar !== (char.avatar || null)) return true;
+    if ((polaroidStyle ?? 0) !== (char.polaroidStyle ?? 0)) return true;
     const origTags = char.tags || [];
     if (tags.length !== origTags.length || tags.some((t, i) => t !== origTags[i])) return true;
     return false;
@@ -1837,6 +1839,7 @@ function CharArchiveView({
       setShowTimeZonePicker(false);
       setTags(char.tags || []);
       setAvatar(char.avatar || null);
+      setPolaroidStyle(char.polaroidStyle ?? 0);
     }
   }, [isEditing, char]);
 
@@ -1878,7 +1881,8 @@ function CharArchiveView({
           : undefined,
         timeZone: normalizedTimeZone,
         tags,
-        avatar: avatar ?? null
+        avatar: avatar ?? null,
+        polaroidStyle
       });
     }
   }
@@ -2101,6 +2105,34 @@ function CharArchiveView({
               </div>
             ) : (
               <span className="char-archive-val">{timeZone || "SYSTEM"}</span>
+            )}
+          </div>
+        </div>
+
+        {/* 拍立得格式：照片墙卡片比例（正方/竖版/横版/16:9/9:16） */}
+        <div className="char-archive-row">
+          <div className="char-archive-cell" style={{ flex: 1 }}>
+            <span className="char-archive-label">Format</span>
+            {isEditing ? (
+              <div className="flex flex-wrap gap-1.5">
+                {[["正方", 0], ["竖版", 1], ["横版", 2], ["16:9", 3], ["9:16", 4]].map(([label, idx]) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setPolaroidStyle(idx as number)}
+                    className="bg-none border-[1.5px] rounded-[3px] px-2 py-0.5 ts-11 cursor-pointer transition-colors"
+                    style={{
+                      borderColor: polaroidStyle === idx ? "#111" : "#999",
+                      color: polaroidStyle === idx ? "#fff" : "#666",
+                      background: polaroidStyle === idx ? "#111" : "transparent",
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <span className="char-archive-val">{["正方", "竖版", "横版", "16:9", "9:16"][polaroidStyle] ?? "正方"}</span>
             )}
           </div>
         </div>

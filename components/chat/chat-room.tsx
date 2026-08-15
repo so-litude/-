@@ -5929,6 +5929,7 @@ export function ChatRoom({ session, onBack }: ChatRoomProps) {
                             showChatToast("已清空线下聊天记录");
                         }}
                         onDeleteFriend={() => onBack()}
+                        onDeleteSession={() => onBack()}
                     />
                 </div>,
                 wrapperRef.current.parentElement

@@ -14,6 +14,7 @@ import {
     getChatMessagePreview,
     pushChatMessage,
     removeChatContact,
+    deleteChatSession,
     normalizeVisionImagePromptLimit,
     MAX_VISION_IMAGE_PROMPT_LIMIT,
     type ChatMessage,
@@ -58,6 +59,7 @@ type ChatSettingsPanelProps = {
     onClose: () => void;
     onJumpToMessage?: (messageId: string) => void;
     onDeleteFriend?: () => void;
+    onDeleteSession?: () => void;
     onToolHistoryCleared?: () => void;
     onOfflineHistoryCleared?: () => void;
     offlineHistoryBusy?: boolean;
@@ -188,6 +190,7 @@ export function ChatSettingsPanel({
     const [showConfirmClearOffline, setShowConfirmClearOffline] = useState(false);
     const [showConfirmClearTools, setShowConfirmClearTools] = useState(false);
     const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+    const [showConfirmDeleteGroup, setShowConfirmDeleteGroup] = useState(false);
     const [editingAlias, setEditingAlias] = useState(false);
     const [editingBilingualPrompt, setEditingBilingualPrompt] = useState(false);
     const [editingCSS, setEditingCSS] = useState(false);
@@ -888,6 +891,15 @@ export function ChatSettingsPanel({
 
                 {/* Destructive Actions */}
                 <div className="menu-group">
+                    {session.isGroup && (
+                    <button className="menu-item" onClick={() => setShowConfirmDeleteGroup(true)}>
+                        <ChatInfoIcon icon={Trash2} color="var(--c-danger)" />
+                        <div className="menu-label-group">
+                            <span className="menu-label menu-label-danger">解散群聊</span>
+                            <span className="menu-desc">删除群聊及全部聊天记录，无法恢复</span>
+                        </div>
+                    </button>
+                    )}
                     {!session.isGroup && (
                     <button className="menu-item" onClick={() => setShowConfirmDelete(true)}>
                         <ChatInfoIcon icon={UserMinus} color="var(--c-danger)" />
@@ -1144,6 +1156,25 @@ export function ChatSettingsPanel({
                     cancelLabel="取消"
                     onConfirm={handleClearToolHistory}
                     onCancel={() => setShowConfirmClearTools(false)}
+                />
+            )}
+
+            {/* Modal: Confirm Dissolve Group */}
+            {showConfirmDeleteGroup && (
+                <ConfirmDialog
+                    title="确定解散该群聊吗？"
+                    message="解散后将删除该群聊及全部聊天记录（含线下记录），无法恢复。是否继续？"
+                    icon={AlertCircle}
+                    variant="danger"
+                    confirmLabel="解散"
+                    cancelLabel="取消"
+                    onConfirm={() => {
+                        clearChatOfflineTurns(session.id);
+                        deleteChatSession(session.id);
+                        setShowConfirmDeleteGroup(false);
+                        onDeleteSession?.();
+                    }}
+                    onCancel={() => setShowConfirmDeleteGroup(false)}
                 />
             )}
 
